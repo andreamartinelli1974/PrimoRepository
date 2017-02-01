@@ -23,3 +23,24 @@ pt = path;
 
 addpath('C:\Users\u093799\Documents\GitHub\Utilities\', ...
     'C:\Users\u093799\Documents\GitHub\PrimoRepository');
+
+params.ExcelPath = 'C:\Users\u093799\Documents\GitHub\PrimoRepository\InputExcel\'; % 'C:\Users\u093799\Documents\MATLAB\AssetImport\InputExcel\';
+params.BBGField = ['LAST_PRICE']; %to extract the historical price from bloomberg
+params.StartDate = ['12/30/2005'];
+params.EndDate = today;
+params.Granularity = ['DAILY'];
+params.IncludeAsset = true; % true; false; to include/exclude the Asset dates in the intersection
+params.DataBBG = DataFromBBG;
+
+TestU = Utilities(params);
+TestU.CreateAssetDataSet;
+finalOutput=TestU.Output;
+
+OutputNames=fieldnames(finalOutput);
+
+prm.inputdates = finalOutput.(OutputNames{1}).dates;
+prm.inputarray = finalOutput.(OutputNames{1}).riskFactors;
+prm.inputnames = finalOutput.(OutputNames{1}).riskFactorsTickers;
+
+TestRegress = HFRegression(prm);
+TestRegress.SimpleRegression;
