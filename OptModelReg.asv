@@ -31,9 +31,9 @@ classdef OptModelReg < handle
         
         function OpRegression(obj)
             
-            params.inputdates = obj.InputDates;
-            params.inputarray = obj.InputArray;
-            params.inputnames = obj.InputNames;
+            params.inputdates = obj.InputDa
+            InputArray = params.inputarray;
+            InputNames = params.inputnames
             
             %create a HFRollingReg object 
             obj.RollReg=HFRollingReg(params,obj.Rolling);
