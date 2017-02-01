@@ -1,5 +1,5 @@
 classdef HFRegression < handle
-    %% Class to perform regression on a single hedge fund using many regressors
+    %% Class to perform regression on a single timeseries using many regressors
     
     % the class has different subclasses to perform different type of
     % regresson and quality controls on the output.
