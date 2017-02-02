@@ -145,7 +145,7 @@ classdef HFRegression < handle
                 % any row conmtains a random vector of 1 and 0
                 % no constraints on the numeber of 1s
                 % the matrix has numberOfTry rows
-                matrix=round(rand(numberOfTry,size(obj.Regressors,2)));
+                matrix=round(rand(numberOfTry,size(obj.Tableret,2)-2));
                 
             elseif strcmp(method,'correlation')        
                 % this finction select a subset of regressors with

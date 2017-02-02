@@ -78,7 +78,7 @@ classdef HFRollingReg < HFRegression
             end
             
             obj.RegTests=stats;
-            k=find(obj.Betas<1e-9);
+            k=find(abs(obj.Betas)<1e-9);
             obj.Betas(k)=0;
             obj.Betas=array2table(obj.Betas,'VariableNames',['Dates','Intercept',{obj.TableRet.Properties.VariableNames{2:end-1}}]);
             
@@ -131,8 +131,8 @@ classdef HFRollingReg < HFRegression
                         testmin=stats.MSE;
                         obj.Betas(j,:)=0;
                         
-                        [obj.TableRet(1,end).Properties.VariableNames,j,i]
-                        [size(obj.TableRet.date),obj.RollingPeriod+j-1,obj.RollingPeriod+i-1,obj.TableRet(obj.RollingPeriod+j-1,1).date]
+%                         [obj.TableRet(1,end).Properties.VariableNames,j,i]
+%                         [size(obj.TableRet.date),obj.RollingPeriod+j-1,obj.RollingPeriod+i-1,obj.TableRet(obj.RollingPeriod+j-1,1).date]
                         trackdate=obj.TableRet(obj.RollingPeriod+j-1,1).date;
                         coefficients=obj.RegResult.Coefficients.Estimate';
                         

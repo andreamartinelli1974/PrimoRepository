@@ -113,39 +113,40 @@ classdef HFRegression < handle
             % ******************************************************
             
             if strcmp(method,'strategy')
-                % in this case the matrix group the index of the same asset
-                % class (e.g. all the equity indexes, credit indexes etc)
-                assetclass=cell(2,size(obj.Regressors,2));
-                for i = 1:size(obj.Regressors,2)
-                    obj.Regressors(i).GetName;
-                    assetclass(1,i) = cellstr(obj.Regressors(i).Output);
-                    obj.Regressors(i).GetAssetClass;
-                    assetclass(2,i) = cellstr(obj.Regressors(i).Output);
-                end
-                step=1;
-                mtxstep=1;
-                matrix=zeros(1,size(obj.Regressors,2));
-                test=assetclass(2,step);
-                matrix(mtxstep,:)=strcmp(test,assetclass(2,:));
-                step=step+1;
-                mtxstep=mtxstep+1;
-                while step<=size(obj.Regressors,2)
-                    test=assetclass(2,step);
-                    if sum(strcmp(test,assetclass(2,1:step-1)))==0
-                        matrix(mtxstep,:)=strcmp(test,assetclass(2,:));
-                        mtxstep=mtxstep+1;
-                    end
-                    while step<=size(obj.Regressors,2) & strcmp(test,assetclass(2,step))
-                        step=step+1;
-                    end
-                end
+% % % TO IMPLEMENT THIS PART OF THE METHOD WITHOUT THE INDEX CLASS                
+% %                 % in this case the matrix group the index of the same asset
+% %                 % class (e.g. all the equity indexes, credit indexes etc)
+% %                 assetclass=cell(2,size(obj.Regressors,2));
+% %                 for i = 1:size(obj.Regressors,2)
+% %                     obj.Regressors(i).GetName;
+% %                     assetclass(1,i) = cellstr(obj.Regressors(i).Output);
+% %                     obj.Regressors(i).GetAssetClass;
+% %                     assetclass(2,i) = cellstr(obj.Regressors(i).Output);
+% %                 end
+% %                 step=1;
+% %                 mtxstep=1;
+% %                 matrix=zeros(1,size(obj.Regressors,2));
+% %                 test=assetclass(2,step);
+% %                 matrix(mtxstep,:)=strcmp(test,assetclass(2,:));
+% %                 step=step+1;
+% %                 mtxstep=mtxstep+1;
+% %                 while step<=size(obj.Regressors,2)
+% %                     test=assetclass(2,step);
+% %                     if sum(strcmp(test,assetclass(2,1:step-1)))==0
+% %                         matrix(mtxstep,:)=strcmp(test,assetclass(2,:));
+% %                         mtxstep=mtxstep+1;
+% %                     end
+% %                     while step<=size(obj.Regressors,2) & strcmp(test,assetclass(2,step))
+% %                         step=step+1;
+% %                     end
+% %               end
                 
             elseif strcmp(method,'random')
                 % in this case the mtx is random 
                 % any row conmtains a random vector of 1 and 0
                 % no constraints on the numeber of 1s
                 % the matrix has numberOfTry rows
-                matrix=round(rand(numberOfTry,size(obj.Regressors,2)));
+                matrix=round(rand(numberOfTry,size(obj.TableRet,2)-2));
                 
             elseif strcmp(method,'correlation')        
                 % this finction select a subset of regressors with
@@ -175,7 +176,7 @@ classdef HFRegression < handle
             else
                 % to be implemented
                 
-                matrix=ones(1,size(obj.Regressors,2)); %this may be deleted
+                matrix=ones(1,size(obj.TableRet,2)-2); %this may be deleted
             end
         end
         
