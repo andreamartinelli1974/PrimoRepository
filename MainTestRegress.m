@@ -57,5 +57,8 @@ hfrollingreg1.RollingReg;
 hfrollingreg2.ConRollReg(mtxC);
 hfrollingreg3.ConRollReg(mtxR);
 
+TestSimpleConstr=HFSimpleConstrReg(prm,mtxC);
+
+
 
 
