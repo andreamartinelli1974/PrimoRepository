@@ -39,9 +39,14 @@ finalOutput=TestU.Output;
 %%
 
 OutputNames=fieldnames(finalOutput);
+inputdates = finalOutput.(OutputNames{3}).dates(2:end,:);
+inputarray = finalOutput.(OutputNames{3}).riskFactors;
 
-prm.inputdates = finalOutput.(OutputNames{3}).dates;
-prm.inputarray = finalOutput.(OutputNames{3}).riskFactors;
+inparrayror=zeros(size(inputarray,1)-1,size(inputarray,2));
+inparrayror(1:end,:)=inputarray(2:end,:)./inputarray(1:end-1,:)-1;
+
+prm.inputdates = inputdates
+prm.inputarray = inparrayror;
 prm.inputnames = finalOutput.(OutputNames{3}).riskFactorsTickers;
 
 TestRegress = HFRegression(prm);
