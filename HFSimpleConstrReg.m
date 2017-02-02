@@ -60,7 +60,9 @@ classdef HFSimpleConstrReg < HFRegression
             obj.RegTests=stats;
             k=find(abs(obj.Betas)<1e-9);
             obj.Betas(k)=0;
-            obj.Betas=array2table(obj.Betas,'VariableNames',['Intercept',{obj.TableRet.Properties.VariableNames{1:end-1}}]);
+            dates=zeros(size(obj.Betas,1),1);
+            dates(:)=obj.TableRet.date(end);
+            obj.Betas=array2table([dates,obj.Betas],'VariableNames',['Dates','Intercept',{obj.TableRet.Properties.VariableNames{2:end-1}}]);
         end
         
         function GetMTXBetas(obj)
