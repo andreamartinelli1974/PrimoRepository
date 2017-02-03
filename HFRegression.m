@@ -128,6 +128,10 @@ classdef HFRegression < handle
             obj.Output = obj.MtxOfRegressors;
         end
         
+        function GetRolling(obj)  
+            obj.Output=obj.RollingPeriod;        
+        end
+        
         function GetBetas(obj)
             obj.Output=obj.Betas;        
         end
