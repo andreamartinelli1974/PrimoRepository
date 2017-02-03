@@ -2,9 +2,6 @@ classdef HFSimpleConstrReg < HFRegression
     % subclass of HFRegression to perform simple regressions on a selected
     % subset of predictors
     
-    properties
-        Betas;
-    end
     
     methods
         % constructor

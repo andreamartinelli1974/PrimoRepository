@@ -59,7 +59,6 @@ mtxR=TestRegress.getMtxPredictors(TestRegress,10,'random');
 mtxC=TestRegress.getMtxPredictors(TestRegress,10,'correlation');
 TestRegressSCR.SimpleConstrainedRegression(mtxC);
 TestRegressRR.RollingRegression;
-TestRegressCRR.ConstrainedRollingRegression(mtxR);
 
 % hfrollingreg1=HFRollingReg(prm,250);
 % hfrollingreg2=HFRollingReg(prm,250);
@@ -73,6 +72,5 @@ TestRegressCRR.ConstrainedRollingRegression(mtxR);
 % TestSCR.SimpleRegConstr(mtxC);
 
 
-TestSRC=HFSimpleConstrReg(prm);
-TestSRC.SimpleRegConstr(mtxC);
+
 

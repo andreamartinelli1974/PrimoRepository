@@ -30,10 +30,10 @@ classdef HFRollingReg < HFRegression
     
     methods
         % constructor
-        function obj = HFRollingReg(params)
+        function obj = HFRollingReg(params,rollingperiod)
             
             obj = obj@HFRegression(params);
-            obj.RollingPeriod = params.rollingperiod;
+            obj.RollingPeriod = rollingperiod;
             
         end
         

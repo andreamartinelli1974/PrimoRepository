@@ -40,11 +40,13 @@ classdef HFRegression < handle
     % a fitlm object.
     
     properties 
-       
+        Input; %input struct
         TableRet; %input table for fitlm(table) regressors + dependent variable in last column
         MtxOfRegressors = []; %the logical matrix that specify wich regressors are effectively used in the regression
         RegResult; % the result of the regression. It's a LinearModel object
         RegTests; %TO BE WELL DEFINED include the result of different test of the regression quality
+        Betas; % array with: 1st clmn dates, 2nd clmn intercept, then betas 
+        RollingPeriod; % rolling window's number of periods (in case the rolling period is not needed put any number)
         Output; %generic output for the GETs methods
         
     end
@@ -53,14 +55,14 @@ classdef HFRegression < handle
         
         function obj = HFRegression(params); %constructor
             
-            InputDates = params.inputdates;
-            InputArray = params.inputarray;
-            InputNames = params.inputnames;
+            obj.Input.inputdates = params.inputdates;
+            obj.Input.inputarray = params.inputarray;
+            obj.Input.inputnames = params.inputnames;
+            obj.Input.rollingperiod = params.rollingperiod;
             
-            % create the TableRet
-                    
-            varnames=strrep(InputNames,' ','_');
-            obj.TableRet=array2table([InputDates, InputArray(:,2:end), InputArray(:,1),],'VariableNames',['date',varnames(2:end),varnames(1)]);
+            % create the TableRet       
+            varnames=strrep(obj.Input.inputnames,' ','_');
+            obj.TableRet=array2table([obj.Input.inputdates, obj.Input.inputarray(:,2:end), obj.Input.inputarray(:,1),],'VariableNames',['date',varnames(2:end),varnames(1)]);
             
         end 
         
@@ -69,9 +71,44 @@ classdef HFRegression < handle
             obj.RegResult = fitlm(obj.TableRet(:,2:end));
             obj.RegTests = obj.RegressionTest(obj.RegResult);
             obj.MtxOfRegressors = ones(1,size(obj.TableRet,2)-2);
+            obj.Betas=obj.RegResult.Coefficients.Estimate';
+            k=find(abs(obj.Betas)<1e-9);
+            obj.Betas(k)=0;
+            obj.Betas=array2table([obj.TableRet.date(end),obj.Betas],'VariableNames',['Dates','Intercept',{obj.TableRet.Properties.VariableNames{2:end-1}}]);
+        end 
+        
+        function SimpleConstrainedRegression(obj,LogicalMTX)
+            
+            SCRobj=HFSimpleConstrReg(obj.Input);
+            SCRobj.SimpleRegConstr(LogicalMTX);
+            obj.MtxOfRegressors = LogicalMTX;
+            obj.RegResult = SCRobj.RegResult;
+            obj.RegTests = SCRobj.RegTests;
+            obj.Betas= SCRobj.Betas;
             
         end 
         
+        function RollingRegression(obj)
+            
+            RRobj=HFRollingReg(obj.Input);
+            RRobj.RollingReg;
+            obj.MtxOfRegressors = RRobj.MtxOfRegressors;
+            obj.RegResult = RRobj.RegResult;
+            obj.RegTests = RRobj.RegTests;
+            obj.Betas= RRobj.Betas;
+            obj.RollingPeriod = RRobj.RollingPeriod;
+        end
+        
+        function ConstrainedRollingRegression(obj,LogicalMTX)
+            
+            RRobj=HFRollingReg(obj.Input);
+            RRobj.ConRollReg(LogicalMTX);
+            obj.MtxOfRegressors = LogicalMTX;
+            obj.RegResult = RRobj.RegResult;
+            obj.RegTests = RRobj.RegTests;
+            obj.Betas= RRobj.Betas;
+            obj.RollingPeriod = RRobj.RollingPeriod;
+        end
         
         % Get Functions, to access different properties of the class
         
@@ -91,12 +128,12 @@ classdef HFRegression < handle
             obj.Output = obj.MtxOfRegressors;
         end
         
+        function GetRolling(obj)  
+            obj.Output=obj.RollingPeriod;        
+        end
+        
         function GetBetas(obj)
-            betas=obj.RegResult.Coefficients.Estimate';
-            k=find(abs(betas)<1e-9);
-            betas(k)=0;
-            betas=array2table([obj.TableRet.date(end),betas],'VariableNames',['Dates','Intercept',{obj.TableRet.Properties.VariableNames{2:end-1}}]);
-            obj.Output=betas;        
+            obj.Output=obj.Betas;        
         end
     end
         
