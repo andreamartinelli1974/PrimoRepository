@@ -45,25 +45,32 @@ inputarray = finalOutput.(OutputNames{3}).riskFactors;
 inparrayror=zeros(size(inputarray,1)-1,size(inputarray,2));
 inparrayror(1:end,:)=inputarray(2:end,:)./inputarray(1:end-1,:)-1;
 
-prm.inputdates = inputdates
+prm.inputdates = inputdates;
 prm.inputarray = inparrayror;
 prm.inputnames = finalOutput.(OutputNames{3}).riskFactorsTickers;
+prm.rollingperiod = 250;
 
 TestRegress = HFRegression(prm);
+TestRegressSCR = HFRegression(prm);
+TestRegressRR = HFRegression(prm);
+TestRegressCRR = HFRegression(prm);
 TestRegress.SimpleRegression;
 mtxR=TestRegress.getMtxPredictors(TestRegress,10,'random');
 mtxC=TestRegress.getMtxPredictors(TestRegress,10,'correlation');
+TestRegressSCR.SimpleConstrainedRegression(mtxC);
+TestRegressRR.RollingRegression;
+TestRegressCRR.ConstrainedRollingRegression(mtxR);
 
-hfrollingreg1=HFRollingReg(prm,250);
-hfrollingreg2=HFRollingReg(prm,250);
-hfrollingreg3=HFRollingReg(prm,250);
+% hfrollingreg1=HFRollingReg(prm,250);
+% hfrollingreg2=HFRollingReg(prm,250);
+% hfrollingreg3=HFRollingReg(prm,250);
+% 
+% hfrollingreg1.RollingReg;
+% hfrollingreg2.ConRollReg(mtxC);
+% hfrollingreg3.ConRollReg(mtxR);
 
-hfrollingreg1.RollingReg;
-hfrollingreg2.ConRollReg(mtxC);
-hfrollingreg3.ConRollReg(mtxR);
-
-TestSCR=HFSimpleConstrReg(prm);
-TestSCR.SimpleRegConstr(mtxC);
+% TestSCR=HFSimpleConstrReg(prm);
+% TestSCR.SimpleRegConstr(mtxC);
 
 
 
