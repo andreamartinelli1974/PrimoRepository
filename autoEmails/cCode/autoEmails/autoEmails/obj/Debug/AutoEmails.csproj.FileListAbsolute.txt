@@ -1,0 +1,14 @@
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\bin\Debug\AutoEmails.dll.config
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\bin\Debug\AutoEmails.dll
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\bin\Debug\AutoEmails.pdb
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\obj\Debug\AutoEmails.csprojAssemblyReference.cache
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\obj\Debug\AutoEmails.csproj.CoreCompileInputs.cache
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\obj\Debug\AutoEmails.dll
+C:\Users\U370176\Documents\GitHub\C_Projects\autoEmails\AutoEmails\obj\Debug\AutoEmails.pdb
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\bin\Debug\AutoEmails.dll.config
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\bin\Debug\AutoEmails.dll
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\bin\Debug\AutoEmails.pdb
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\obj\Debug\AutoEmails.csprojAssemblyReference.cache
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\obj\Debug\AutoEmails.csproj.CoreCompileInputs.cache
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\obj\Debug\AutoEmails.dll
+X:\SalaOp\AAPA\GP\autoEmails\cCode\autoEmails\AutoEmails\obj\Debug\AutoEmails.pdb
