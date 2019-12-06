@@ -6,6 +6,11 @@ clc; clear all; close all;
 userId = getenv('USERNAME');
 addpath(['C:\Users\' userId '\Documents\GitHub\Utilities']);
 
+%%% INITIAL PARAMETERS %%%
+data_dir = 'C:\Users\u093799\Documents\GitHub\PrimoRepository\Data\';
+use_previous_n_days = 2;
+
+
 %% **************** STRUCTURE TO ACCESS BLOOMBERG DATA ********************
 
 DataFromBBG.save2disk = true(1); % false(1); % True to save all Bloomberg calls to disk for future retrieval
@@ -45,16 +50,17 @@ end
 
 %% check for new input files and load them
 
-data_dir = 'C:\Users\u093799\Documents\GitHub\PrimoRepository\Data\';
 dir_content = dir([data_dir,'*.xlsx']);
 files_to_check = {dir_content.name};
 new_files = [];
 
 old_data = [];
 InputTables = [];
+newlastUpdate = [];
 
 if isfile('DataStoring.mat')
     load('Datastoring.mat');
+    lastUpdate = DataStoring.lastUpdate;
     old_files = DataStoring.filenames;
     new_files = setdiff(files_to_check,old_files);
     if ~isempty(new_files)
@@ -73,33 +79,67 @@ else
     new_names = erase(new_names,'_xlsx');
 end
 
-DataStoring.filenames = files_to_check;
+DataStoring.filenames = files_to_check';
 
-if numel(new_files)>0
-    for i = 1:numel(new_files)
-        opts = detectImportOptions([data_dir,new_files{i}]);
-        InputTables.(new_names{i}).rawTable = readtable([data_dir,new_files{i}],opts);
-        DataStoring.DataTable = [DataStoring.DataTable; InputTables.(new_names{i}).rawTable];
-    end
-    
-    
-    % get date
+if numel(new_files)>0 
+    % get data
     for i = 1:numel(new_names)
+        % read the table
+        opts = detectImportOptions([data_dir,new_files{i}]);
+        newTable = readtable([data_dir,new_files{i}],opts);
+        
+        %%% TO DO: CHOSE ONE OF THE TWO DATE %%%
+        % read the date from the file name 
         index   = strfind(new_names{i}, '_');
         S       = new_names{i}((index(end))+1:end);
         StrDate = [S(1:4), '-', S(5:6), '-', S(7:8)];
-        InputTables.(new_names{i}).date = datetime(StrDate,'InputFormat','yyyy-MM-dd');
+        datefromname(i) = datetime(StrDate,'InputFormat','yyyy-MM-dd');
+        
+        % read the date from "last modification"
         FileInfo = dir([data_dir,new_files{i}]);
-        TimeStamp = datetime(FileInfo.date);
+        TimeStamp(i) = datetime(FileInfo.date);
         TimeStamp.Format = 'dd-MMM-yyyy';
-        InputTables.(new_names{i}).date2 = TimeStamp;
+        
+        % insert the date in the table
+        n_row = size(newTable,1);
+        newcol = repmat(datefromname(i),n_row,1);
+        concTable = table(newcol,'VariableNames',{'Date'});
+        newTable = [concTable, newTable];
+        
+        % store data in InputTables
+        InputTables.(new_names{i}).date = datefromname(i);
+        InputTables.(new_names{i}).date2 = TimeStamp(i);
+        InputTables.(new_names{i}).rawTable = newTable;
+        
+        % store table in DataStoring
+        DataStoring.DataTable = [DataStoring.DataTable; newTable];
+        newlastUpdate = max(datefromname);
+        DataStoring.lastUpdate = newlastUpdate;
+        clear newTable;
     end
 end
 
+
 %% Data manipulation
+%%%%% IMPORTANT: CALCULATIONS MUST BE PERFORMED ONLY IN CASE
+%%%%% newlastUpdate > lastUpdate 
+
+% to create a matrix with the relavant date (the last one and the use_previous_n_days
+% before.
+
+% steps: 
+% 1 read the column DataStoring.DataTable.Date
+% 2 sort and unique 
+% 3 get the last use_previous_n_days values
+% filter the  DataStoring.DataTable in the way below
+index(:,1) = find(DataStoring.DataTable.Date == '04-dec-2019');
+index(:,2) = find(DataStoring.DataTable.Date == '03-dec-2019');
+index = reshape(index,[],1);
+myTable = DataStoring.DataTable(index,:);
+
 
 % get brockers names
-
+if numel(new_files)>0 
 brokernames = {};
 
 for i = 1:numel(new_names)
@@ -119,14 +159,16 @@ brokernames = erase(brokernames, '_');
 
 brokernames = unique(brokernames');
 
-% get company names & figi
-figi = {};
+% get company data
 company_name = {};
 
 for i = 1:numel(new_names)
-    figi{i} = InputTables.(new_names{i}).rawTable.Symbol;
     company_name{i} = InputTables.(new_names{i}).rawTable.Name;
 end
+
+end
+% for i = 1:numel(company_names)
+
 
 %% get tickers from figi 
 % **** TEST ****
