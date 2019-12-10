@@ -192,18 +192,21 @@ if newlastUpdate>lastUpdate
             b_names = Table_to_analyze.Properties.VariableNames;
             index_eps = find(contains(b_names,[broker_names{j},'_EPS']));
             index_rating = find(contains(b_names,[broker_names{j},'_RATING']));
-            index_b = [index_eps,index_rating];
-            signal = sum(Table_to_analyze{index_cmp,index_b});
+            signal_eps = sum(Table_to_analyze{index_cmp,index_eps});
+            signal_rating = sum(Table_to_analyze{index_cmp,index_rating});
             
-            % insert here the contition on signal
-            
-            condition = find(abs(signal)>1);
-            
-            if isempty(condition) % not verified
-                signal_to_wrt = 0;
+            % contition on signal
+            if signal_eps>=1 && signal_rating>=1
+                condition = true;
+                signal_to_wrt = 1;
+            elseif signal_eps<=-1 && signal_rating<=-1
+                condition = true;
+                signal_to_wrt = -1;
+            else
+                condition = false;
+            end
                 
-            else % verified
-                signal_to_wrt = sign(signal(condition(1)));
+            if condition % verified
                 
                 %get ticker from bbg
                 isin = unique(Table_to_analyze.ISIN(index_cmp));

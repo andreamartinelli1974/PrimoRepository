@@ -89,6 +89,7 @@ else
         VarNames = signal_table.Properties.VariableNames;
         signal_table.(VarNames{1}).Format = 'dd-MMM-yyyy';
         DataStoring.signal_table = signal_table;
+        last_vintage = signal_table.Vintage(end);
     else
         disp('***   WARNING   ***');
         disp('No Signal History excel file found');
@@ -191,12 +192,12 @@ if newlastUpdate>lastUpdate
             b_names = Table_to_analyze.Properties.VariableNames;
             index_eps = find(contains(b_names,[broker_names{j},'_EPS']));
             index_rating = find(contains(b_names,[broker_names{j},'_RATING']));
-            index_b = [index_eps,index_rating];
-            signal = sum(Table_to_analyze{index_cmp,index_b});
-            
+            signal_eps = sum(Table_to_analyze{index_cmp,index_eps});
+            signal_rating = sum(Table_to_analyze{index_rating,index_eps});
+            signal = signal_eps,
             % insert here the contition on signal
             
-            condition = find(abs(signal)>1);
+            condition = find(abs(signal)>=1);
             
             if isempty(condition) % not verified
                 signal_to_wrt = 0;
@@ -224,11 +225,11 @@ if newlastUpdate>lastUpdate
                 % build the output table row to append to the output table.
                 if exist('signal_table','var')
                     VarNames = signal_table.Properties.VariableNames;
-                    last_vintage = signal_table.Vintage(end);
                     row_to_add = table(newlastUpdate,ticker,broker_names(j),signal_to_wrt,last_vintage+1);
                     row_to_add.Properties.VariableNames = VarNames;
                     signal_table = [signal_table; row_to_add];
                 else
+                    last_vintage = 0;
                     row_to_add = table(newlastUpdate,'ticker',broker_names{j},signal,last_vintage+1);
                     signal_table = [signal_table; row_to_add];
                 end
