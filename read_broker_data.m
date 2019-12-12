@@ -27,8 +27,10 @@ function Output = read_broker_data(b_params)
     % input params
     data_dir = b_params.data_dir;
     signal_history_file = b_params.signal_history_file;
+    sig_h_file_dir = b_params.sig_h_file_dir;
     use_previous_n_days = b_params.use_previous_n_days;
     DataFromBBG = b_params.DataFromBBG;
+    
 
     % check for new files (and for the storing .mat file)
     dir_content = dir([data_dir,'*.xlsx']);
@@ -204,18 +206,35 @@ function Output = read_broker_data(b_params)
                     % build the output table row to append to the output table.
                     if exist('signal_table','var')
                         VarNames = signal_table.Properties.VariableNames;
+                        numVarNames = numel(VarNames);
                         row_to_add = table(newlastUpdate,ticker,broker_names(j),signal_to_wrt,last_vintage+1);
                         row_to_add.Properties.VariableNames = VarNames;
                         signal_table = [signal_table; row_to_add];
                         %%% to do: write the new signal_history_file
                         %%% trying to append the new data to the old excel table
+                        xlApp = actxserver('Excel.Application');
+                        xlApp.visible = 1;
+                        %Open the the spreadsheet
+                        xlworkbook = xlApp.Workbooks.Open([sig_h_file_dir signal_history_file]);
+                        xlsheet = xlworkbook.ActiveSheet;
+                        data=xlsread(signal_history_file);
+                        %Determine last row
+                        last=size(data,1);
+                        newRange=last+2;
+                        range_end = char('A'+numel(VarNames)-1);
+                        xlCurrRange = xlsheet.Range(['A' num2str(newRange) ':' range_end  num2str(newRange)]);
+                        row_to_add.TradeDate = datestr(row_to_add.TradeDate,23);
+                        xlCurrRange.Value = table2cell(row_to_add);
+                        %Save and Close the Excel File
+                        invoke(xlworkbook,'Save');
+                        invoke(xlApp,'Quit');
+                        delete(xlApp);
                     else
                         VarNames = {'TradeDate', 'TickerBBG', 'Broker', 'Signal', 'Vintage'};
                         last_vintage = 0;
-                        row_to_add = table(newlastUpdate,'ticker',broker_names{j},signal,last_vintage+1);
-                        row_to_add.Properties.VariableNames = VarNames;
-                        signal_table = [signal_table; row_to_add];
-                        xlswrite(signal_history_file,signal_table);
+                        signal_table = table(newlastUpdate,ticker,broker_names(j),signal_to_wrt,last_vintage+1);
+                        signal_table.Properties.VariableNames = VarNames;
+                        writetable(signal_table,signal_history_file);
                     end
                 end
                 % end of condition

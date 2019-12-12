@@ -54,7 +54,7 @@ end
 % input parameters
 b_params.data_dir = 'C:\Users\u093799\Documents\GitHub\PrimoRepository\Data\';
 b_params.signal_history_file = 'Signals_traded_LIVE _Copy.xlsx';
-b_params.sig_h_file_dir = 'C:\Users\u093799\Documents\GitHub\PrimoRepository\';
+b_params.sig_h_file_dir
 b_params.use_previous_n_days = 2;
 b_params.DataFromBBG = DataFromBBG;
 
