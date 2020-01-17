@@ -12,10 +12,10 @@ function PriceSample = GetArtificialPrices()
     a = 0.04; % fixed time trend coefficient
 
     % drift 
-    driftB = -0.5;
-    driftAR = 1;
-    drift2B = 0.9;
-    drift2AR = 1;
+    driftB = -0.005;
+    driftAR = 0.01;
+    drift2B = 0.00009;
+    drift2AR = 0.0001;
 
     % time
     T = 1; % stands for one year
@@ -36,7 +36,7 @@ function PriceSample = GetArtificialPrices()
     sample_date = datetime(busdays(today()-L,today()),'ConvertFrom','datenum');
     sample_date.Format = 'defaultdate';
     L = numel(sample_date);
-    sample_random = randn(L,1)/100;
+    sample_random = randn(L,1);
 
 
     for t = 1:L
@@ -97,6 +97,7 @@ function PriceSample = GetArtificialPrices()
     
     figure();
     hold
+    %plot(dP);
     plot(exp(cumsum(dP)));
     plot(TT);
     
