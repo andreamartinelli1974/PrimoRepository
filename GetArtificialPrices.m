@@ -4,11 +4,12 @@ function PriceSample = GetArtificialPrices()
 % code translated from python %
 
     % Initial Parameters
+    L = 5000; % of initial steps in my historical timeseries
 
     S0 = 1; % initial stock price
     %rng(999); % for reproducibility
     rng('shuffle');
-    a = 0.03; % fixed time trend coefficient
+    a = 0.04; % fixed time trend coefficient
 
     % drift 
     driftB = -0.5;
@@ -21,7 +22,6 @@ function PriceSample = GetArtificialPrices()
     tradingDaysNo = 252;
     DaysNo = 365;
     dt = T/tradingDaysNo;
-    L = 5000; % of years in my historical timeseries
 
     % garch 
     desiredAnnualisedLongTermSigma = 0.30;  % this number won't be achieved because of the GARCH dynamics itself !!!
