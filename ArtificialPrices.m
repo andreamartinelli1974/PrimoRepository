@@ -92,15 +92,15 @@ for t = 1:L
     end
 end
 
-sample_prices = table(sample_date, equityPrice + TT);
+sample_prices = timetable(sample_date, equityPrice + TT);
 sample_prices.Properties.VariableNames(2)={'prices'};
 
-figure();
-hold
-plot(dP);
-%plot(TT);
+% figure();
+% hold
+% plot(dP);
+% plot(TT);
 
-%figure();
-%plot(sample_prices.sample_date,sample_prices.prices);
+% figure();
+% plot(sample_prices.sample_date,sample_prices.prices);
 
 

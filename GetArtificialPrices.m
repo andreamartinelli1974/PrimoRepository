@@ -95,11 +95,11 @@ function PriceSample = GetArtificialPrices()
     
     %%%% PLOT: to be deleted for final version 
     
-    figure();
-    hold
-    %plot(dP);
-    plot(exp(cumsum(dP)));
-    plot(TT);
+%     figure();
+%     hold
+%     plot(dP);
+%     plot(exp(cumsum(dP)));
+%     plot(TT);
     
     %%%%
 

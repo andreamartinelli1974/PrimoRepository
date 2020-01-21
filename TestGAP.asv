@@ -17,5 +17,5 @@ params.size_exp_div = 0.89;
 TrendEst = MACD_trend_estimator(params);
 [trend_est, pos_size] = MACD_trend_and_size(params);
 
-test = (-10:0.1:10);
+test = -
 testphi = (1/params.size_exp_div).*test.*exp((-test.^2)/4);

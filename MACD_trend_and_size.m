@@ -1,5 +1,5 @@
-function output = MACD_trend_estimator(params)
-    % function to estimate the trend of a price series using a
+function [trend_est, pos_size] = MACD_trend_and_size(params)
+    % function to estimate the trend and size of a price series using a
     % volatility-normalized function based on exponential moving averages
     % on short an long period. 
     % the function is needed to calculate the investment size of a position
@@ -13,13 +13,15 @@ function output = MACD_trend_estimator(params)
     std_MACD_window = params.std_MACD_window;
     movavg_short_wndw = params.movav_short;
     movavg_long_wndw = params.movav_long;
+    size_exp_div = params.size_exp_div;
     
     % variable definition
     no_prices = size(prices,1);
-    startdata = zeros(no_prices,1);
-    std_prices = timetable(date,startdata);
-    norm_MACD =  timetable(date,startdata);
-    trend_est =  timetable(date,startdata);
+    data = zeros(no_prices,1);
+    std_prices = timetable(date,data);
+    norm_MACD  = timetable(date,data);
+    trend_est  = timetable(date,data);
+    pos_size   = timetable(date,data);
     
     
     if no_prices> std_price_window && no_prices> std_MACD_window
@@ -29,11 +31,11 @@ function output = MACD_trend_estimator(params)
         MACD = movavg_short - movavg_long;
         
         for t = std_price_window:no_prices
-            std_prices(t) = std(prices.prices(t-std_price_window+1:t));
-            norm_MACD(t) = MACD(t)/std_prices(t);
+            std_prices.data(t) = std(prices.prices(t-std_price_window+1:t));
+            norm_MACD.data(t) = MACD(t)/std_prices.data(t);
         end
         for t = std_MACD_window:no_prices
-            trend_est(t) = norm_MACD(t)/std(norm_MACD(t-std_price_window+1:t));
+            trend_est.data(t) = norm_MACD.data(t)/std(norm_MACD.data(t-std_price_window+1:t));
         end
         
     elseif no_prices<= std_MACD_window
@@ -42,9 +44,6 @@ function output = MACD_trend_estimator(params)
         disp('ERROR: std_price_window is longer then price history');
     end
     
-    
-    output = trend_est;
-    
-    %macd = movavg_short - movavg_long;
-
+    pos_size.data = (1/size_exp_div).*trend_est.data.*exp((-trend_est.data.^2)/4);
 end
+
