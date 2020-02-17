@@ -51,7 +51,7 @@ sectors_dict = {'1':'Oil & Gas','1000':'Basic Materials','2000':'Industrial',
 
 #%% get the rolling window
 alldata = len(referenceDate.index)
-months_to_train = 24;
+months_to_train = 12;
 
 value = np.random.randint(months_to_train+1, alldata, size=1)
     
@@ -69,7 +69,7 @@ features = prepare_data(mywindow)
 x = features
 y = mywindow['ICB_INDUSTRY_NUM']
 
-parameters = {'max_depth':range(15,30)}
+parameters = {'max_depth':range(20,30)}
 clf = GridSearchCV(tree.DecisionTreeClassifier(), parameters, n_jobs=8)
 clf.fit(X=x, y=y)
 tree_model = clf.best_estimator_
@@ -262,7 +262,7 @@ color = one_month_data['COLORS']
 
 fig, ax = plt.subplots(figsize=(14, 10))
 
-ax.scatter(x, y, c=color, label=color, s = 150, edgecolors='black')
+ax.scatter(x, y, c=color, label=color, s = 100, edgecolors='black')
 
 ax.set_xlabel(col1)
 ax.set_ylabel(col2)
@@ -277,17 +277,17 @@ outliers['COLORS_2'] = outliers["PREDICTED_NUM"].map(colors_dict)
 
 n_col=len(one_month_data.columns)
 
-col_to_plot = np.random.randint(2, n_col-3, size=2)
+col_to_plot = np.random.randint(2, n_col-2, size=2)
 print(col_to_plot[0])
 
-col1 = one_month_data.columns[col_to_plot[0]]
-col2 = one_month_data.columns[col_to_plot[1]]
+#col1 = one_month_data.columns[col_to_plot[0]]
+#col2 = one_month_data.columns[col_to_plot[1]]
 
-#col1 = 'PB_PCF_1'
-#col2 = 'EBIT_SALES'
-#col2 = 'MKT_CAP_SALES'
+col1 = 'PB_PCF_1'
+col2 = 'EBIT_SALES'
+col2 = 'MKT_CAP_SALES'
 
-sector = '6000' # to be chosen between 1, 2000,3000 .... ,9000
+sector = '8000' # to be chosen between 1, 2000,3000 .... ,9000
 
 mysector = one_month_data['ICB_INDUSTRY_NUM'] == sector
 toprint = one_month_data[mysector]
@@ -304,8 +304,8 @@ color2 = outliers_toprint['COLORS_2']
 
 fig, ax = plt.subplots(figsize=(14, 10))
 
-ax.scatter(x1, y1, c=color1, label=color1, s = 150, edgecolors='black')
-ax.scatter(x2, y2, c=color2, label=color2, s = 150, edgecolors='black')
+ax.scatter(x1, y1, c=color1, label=color1, s = 100, edgecolors='black')
+ax.scatter(x2, y2, c=color2, label=color2, s = 100, edgecolors='black')
 
 ax.set_xlabel(col1)
 ax.set_ylabel(col2)
@@ -320,7 +320,7 @@ outliers_f['COLORS_2'] = outliers_f["PREDICTED_NUM"].map(colors_dict)
 
 n_col=len(one_month_data.columns)
 
-col_to_plot = np.random.randint(2, n_col-3, size=2)
+col_to_plot = np.random.randint(2, n_col-2, size=2)
 print(col_to_plot[0])
 
 #col1 = one_month_data.columns[col_to_plot[0]]
@@ -330,7 +330,7 @@ col1 = 'PB_PCF_1'
 col2 = 'EBIT_SALES'
 col2 = 'MKT_CAP_SALES'
 
-sector = '2000' # to be chosen between 1, 2000,3000 .... ,9000
+sector = '8000' # to be chosen between 1, 2000,3000 .... ,9000
 
 mysector = one_month_data['ICB_INDUSTRY_NUM'] == sector
 toprint = one_month_data[mysector]
@@ -347,8 +347,8 @@ color2 = outliers_toprint['COLORS_2']
 
 fig, ax = plt.subplots(figsize=(14, 10))
 
-ax.scatter(x1, y1, c=color1, label=color1, s = 150, edgecolors='black')
-ax.scatter(x2, y2, c=color2, label=color2, s = 150, edgecolors='black')
+ax.scatter(x1, y1, c=color1, label=color1, s = 100, edgecolors='black')
+ax.scatter(x2, y2, c=color2, label=color2, s = 100, edgecolors='black')
 
 ax.set_xlabel(col1)
 ax.set_ylabel(col2)
