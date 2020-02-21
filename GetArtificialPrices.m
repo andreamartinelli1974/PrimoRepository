@@ -90,8 +90,9 @@ function PriceSample = GetArtificialPrices()
         end
     end
 
-    PriceSample = table(sample_date, equityPrice + TT);
+    PriceSample = table(sample_date, equityPrice + TT,sample_random);
     PriceSample.Properties.VariableNames(2)={'prices'};
+    PriceSample.Properties.VariableNames(3)={'random_root'};
     
     %%%% PLOT: to be deleted for final version 
     
