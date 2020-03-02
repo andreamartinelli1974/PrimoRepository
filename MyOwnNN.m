@@ -9,6 +9,7 @@ train_pct= 0.6;
 validation_pct = 0.2;
 sample = GetArtificialPrices();
 rolling_window = 252;
+delta = 10;
 
 params.prices = sample; %timeseries
 params.std_price_window = 63;
@@ -68,27 +69,27 @@ test_prices_norm = (test_prices - mu) / sig;
 %% prepare data
 
 % set up the cell array
-my_prices = cell(numTimeStepsTrain-rolling_window,1);
-my_truth = cell(numTimeStepsTrain-rolling_window,1);
+my_prices = cell(numTimeStepsTrain-rolling_window-delta,1);
+my_truth = cell(numTimeStepsTrain-rolling_window-delta,1);
 
 my_valid_x = cell(numTimeStepsValid-rolling_window);
 my_valid_y = cell(numTimeStepsValid-rolling_window);
 
-my_test = cell(numel(test_prices_norm)-rolling_window,1);
-my_test_truth = cell(numel(test_prices_norm)-rolling_window,1);
+my_test = cell(numel(test_prices_norm)-rolling_window-delta,1);
+my_test_truth = cell(numel(test_prices_norm)-rolling_window-delta,1);
 
 % fill the array with data
-for i = 1:numTimeStepsTrain-rolling_window
-    my_prices{i} = train_prices_norm(i:i+rolling_window-2)';
-    my_truth{i} = train_prices_norm(i+1:i+rolling_window-1)';
+for i = 1:numTimeStepsTrain-rolling_window-delta
+    my_prices{i} = train_prices_norm(i:i+rolling_window-1)';
+    my_truth{i} = train_prices_norm(i+delta:i+rolling_window+delta-1)';
 end
 for i = 1:numTimeStepsValid-rolling_window
     my_valid_x{i} = validation_prices_norm(i:i+rolling_window-2)';
     my_valid_y{i} = validation_prices_norm(i+1:i+rolling_window-1)';
 end
-for i = 1: numel(test_prices_norm)-rolling_window
+for i = 1: numel(test_prices_norm)-rolling_window-delta
     my_test{i} = test_prices_norm(i:i+rolling_window-2)';
-    my_test_truth{i} = test_prices_norm(i+1:i+rolling_window-1)';
+    my_test_truth{i} = test_prices_norm(i+delta:i+rolling_window+delta-1)';
 end
 
 
@@ -150,12 +151,12 @@ net = trainNetwork(my_prices,my_truth,layers,options);
 %%
 
 my_pred = predict(net,my_test);
-data = zeros(numel(my_test)+1,1);
-pred = zeros(numel(my_test)+1,1);;
+data = zeros(numel(my_test)+delta,1);
+pred = zeros(numel(my_test)+delta,1);;
 
 for i = 1:numel(my_test)
     data(i) = my_test{i}(end);
-    pred(i+1) = my_pred{i}(end);
+    pred(i+delta) = my_pred{i}(end);
 end
 
 
