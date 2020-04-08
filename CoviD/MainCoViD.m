@@ -1,22 +1,38 @@
 clc, clear all, close all
 
+mov_av = 1;
+
 datadead = readtable("comune_giorno.csv");
 datadead.GE = datadead.GE + 20200000;
 
 %% get Bergamo Prov. data without not available data
 dataBG = datadead((datadead.PROV == 16),:); 
+% dataBG = datadead; 
 
 % aggregate 
-dataBG_byComune_avg = varfun(@sum, dataBG,'InputVariables',{'TOTALE_15','TOTALE_16',...
+dataBG_byComune_avg_all = varfun(@sum, dataBG,'InputVariables',{'TOTALE_15','TOTALE_16',...
                                'TOTALE_17','TOTALE_18','TOTALE_19'},...
                                'GroupingVariables',{'NOME_COMUNE','COD_PROVCOM','GE'});
+
 dataBG_20 = dataBG(dataBG.TOTALE_20 ~= 9999,:);                         
-dataBG_byComune_20 = varfun(@sum, dataBG_20,'InputVariables','TOTALE_20',...
+dataBG_byComune_20_all = varfun(@sum, dataBG_20,'InputVariables','TOTALE_20',...
                                'GroupingVariables',{'NOME_COMUNE','COD_PROVCOM','GE'});
 
+
+common_provcom = intersect(dataBG_byComune_avg_all.COD_PROVCOM,dataBG_byComune_20_all.COD_PROVCOM);
+
+dataBG_byComune_avg = [];
+dataBG_byComune_20 = [];
+
+for i = 1:numel(common_provcom)
+    dataBG_byComune_avg = [dataBG_byComune_avg; ...
+        dataBG_byComune_avg_all(dataBG_byComune_avg_all.COD_PROVCOM == common_provcom(i),:)];
+    
+    dataBG_byComune_20 = [dataBG_byComune_20; ...
+        dataBG_byComune_20_all(dataBG_byComune_20_all.COD_PROVCOM == common_provcom(i),:)];
+end
+
 dataBG_byComune_avg.MEDIA_15_19 = mean(dataBG_byComune_avg{:,5:9},2);
-
-
 
 dataProvincia = varfun(@sum, dataBG_byComune_avg,'InputVariables',{'MEDIA_15_19'},...
     'GroupingVariables','GE');
@@ -40,6 +56,21 @@ tbl = varfun(@sum, dataBG_byComune_avg,'InputVariables',{'sum_TOTALE_19'},...
 dataProvincia.M19 = tbl.sum_sum_TOTALE_19;
 
 
+dataProvincia.sum_MEDIA_15_19 = dataProvincia.M19;
+
+%% get moving average data
+if mov_av == 1
+    steps = [2,0];
+    dataProvincia_20.sum_sum_TOTALE_20 = movmean(dataProvincia_20.sum_sum_TOTALE_20,steps);
+    dataProvincia.sum_MEDIA_15_19 = movmean(dataProvincia.sum_MEDIA_15_19,steps);
+    dataProvincia.M15 = movmean(dataProvincia.M15,steps);
+    dataProvincia.M16 = movmean(dataProvincia.M16,steps);
+    dataProvincia.M17 = movmean(dataProvincia.M17,steps);
+    dataProvincia.M18 = movmean(dataProvincia.M18,steps);
+    dataProvincia.M19 = movmean(dataProvincia.M19,steps);
+end
+
+
 %% elaborate data                          
 xdate = unique(datenum(num2str(dataBG_byComune_avg.GE),'yyyymmdd'));
 xdatetime = datetime(xdate,'ConvertFrom','datenum');
@@ -50,13 +81,13 @@ xdatetime20 = datetime(xdate20,'ConvertFrom','datenum');
 FitTbl_avg = table(xdate,dataProvincia.sum_MEDIA_15_19);
 FitTbl_cvd_baseline = table(xdate20(1:51),dataProvincia_20.sum_sum_TOTALE_20(1:51));
 
-Model_avg = fitlm(FitTbl_avg);
+Model_avg = fitlm(FitTbl_avg,'quadratic');
 a0 = Model_avg.Coefficients.Estimate;
-
+modelfun_avg = @(b,x) b(1)+b(2)*x+b(3)*x.^2;
 
 Model_cvd_baseline = fitlm(FitTbl_cvd_baseline);
 c0 = Model_cvd_baseline.Coefficients.Estimate;
-FittedAVG = table(xdatetime,dataProvincia.sum_MEDIA_15_19,a0(1)+a0(2)*xdate,c0(1)+c0(2)*xdate);
+FittedAVG = table(xdatetime,dataProvincia.sum_MEDIA_15_19,modelfun_avg(a0,xdate),c0(1)+c0(2)*xdate);
 
 [dates_20,index_avg,index_20] = intersect(xdatetime,xdatetime20);
 FitTbl_cvd = table(xdate20-xdate20(1),dataProvincia_20.sum_sum_TOTALE_20-FittedAVG.Var4(index_avg)); 
@@ -89,17 +120,17 @@ PreviewCVD = table(xdatetime(diffDate),...
 PreviewCVD.Properties.VariableNames = {'xdatetime','Fitted_CoviD','SE1','SE2'};
 
 %% plot
-close all
+
 f1 = figure();  
 hold on;
 % plot baseline with fitted line
-p1 = plot(FittedAVG.xdatetime,FittedAVG.Var2,'DisplayName','Media 15 19');
+p1 = plot(FittedAVG.xdatetime,FittedAVG.Var2,'DisplayName','Mortalità 19');
 p1.LineStyle = 'none';
 p1.Marker = 'o';
 p1.MarkerSize = 4;
 p1.Color = [0,0,1];
-p3 = plot(FittedAVG.xdatetime,FittedAVG.Var3,'DisplayName','Media fitted');
-p3.Color = [0,0,1];
+% p3 = plot(FittedAVG.xdatetime,FittedAVG.Var3,'DisplayName','Media fitted');
+% p3.Color = [0,0,1];
 
 % plot CoviD with Fitted Line 
 p2 = plot(FittedCVD.xdatetime20,FittedCVD.CoviD,'DisplayName','CoviD');
@@ -136,20 +167,21 @@ letalIndex = [1/0.0051 1/0.0114 1/0.0178];
 
 stimacontagio = cumsum(FitTbl_cvd{52:end,2}*letalIndex);
 stimacontagio(stimacontagio<0)=0;
+date = xdatetime20(52:end,1);
 
-figure()
-p21 = semilogy(stimacontagio(:,1),'DisplayName','contagioMax');
+f2 = figure();
+p21 = semilogy(date,stimacontagio(:,1),'DisplayName','contagioMax');
 hold on;
 p21.LineStyle = 'none';
 p21.Marker = 'o';
 p21.MarkerSize = 3;
 p21.Color = [0,0,1];
-p22 = semilogy(stimacontagio(:,2),'DisplayName','contagio');
+p22 = semilogy(date,stimacontagio(:,2),'DisplayName','contagio');
 p22.LineStyle = 'none';
 p22.Marker = 'd';
 p22.MarkerSize = 4;
 p22.Color = [1,0,0];
-p23 = semilogy(stimacontagio(:,3),'DisplayName','contagioMin');
+p23 = semilogy(date,stimacontagio(:,3),'DisplayName','contagioMin');
 p23.LineStyle = 'none';
 p23.Marker = 'o';
 p23.MarkerSize = 3;
@@ -158,14 +190,26 @@ hold off;
 
 %% plot deads for any year
 
-figure()
-plot(dataProvincia.M15,'LineStyle','none','Marker','.');
+figure();
+h1=plot(xdatetime,dataProvincia.M15,'LineStyle','none','Marker','o');
+set(h1, 'markerfacecolor', get(h1, 'color'));
+h1.MarkerSize = 3;
 hold on;
-plot(dataProvincia.M16,'LineStyle','none','Marker','.');
-plot(dataProvincia.M17,'LineStyle','none','Marker','.');
-plot(dataProvincia.M18,'LineStyle','none','Marker','.');
-plot(dataProvincia.M19,'LineStyle','none','Marker','.');
-plot(dataProvincia_20.sum_sum_TOTALE_20,'LineStyle','none','Marker','.');
+h2=plot(xdatetime,dataProvincia.M16,'LineStyle','none','Marker','o');
+set(h2, 'markerfacecolor', get(h2, 'color'));
+h2.MarkerSize = 3;
+h3=plot(xdatetime,dataProvincia.M17,'LineStyle','none','Marker','o');
+set(h3, 'markerfacecolor', get(h3, 'color'));
+h3.MarkerSize = 3;
+h4=plot(xdatetime,dataProvincia.M18,'LineStyle','none','Marker','o');
+set(h4, 'markerfacecolor', get(h4, 'color'));
+h4.MarkerSize = 3;
+h5=plot(xdatetime,dataProvincia.M19,'LineStyle','none','Marker','o');
+set(h5, 'markerfacecolor', get(h5, 'color'));
+h5.MarkerSize = 3;
+h6=plot(xdatetime20,dataProvincia_20.sum_sum_TOTALE_20,'LineStyle','none','Marker','o');
+set(h6, 'markerfacecolor', get(h6, 'color'));
+h6.MarkerSize = 3;
 hold off;
 
 
