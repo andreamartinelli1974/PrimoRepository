@@ -55,8 +55,9 @@ tbl = varfun(@sum, dataBG_byComune_avg,'InputVariables',{'sum_TOTALE_19'},...
     'GroupingVariables','GE');
 dataProvincia.M19 = tbl.sum_sum_TOTALE_19;
 
-
-dataProvincia.sum_MEDIA_15_19 = dataProvincia.M19;
+%%%% scelta Mortalita media %%%%%%%%%%%%%%%%%%%%%%%%
+dataProvincia.sum_MEDIA_15_19 = dataProvincia.M19; %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% get moving average data
 if mov_av == 1
@@ -89,35 +90,57 @@ Model_cvd_baseline = fitlm(FitTbl_cvd_baseline);
 c0 = Model_cvd_baseline.Coefficients.Estimate;
 FittedAVG = table(xdatetime,dataProvincia.sum_MEDIA_15_19,modelfun_avg(a0,xdate),c0(1)+c0(2)*xdate);
 
+%%%% BASELINE CHOISE %%%%%%%
+BASELINE = FittedAVG.Var3; %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 [dates_20,index_avg,index_20] = intersect(xdatetime,xdatetime20);
-FitTbl_cvd = table(xdate20-xdate20(1),dataProvincia_20.sum_sum_TOTALE_20-FittedAVG.Var4(index_avg)); 
+
+FitTbl_cvd = table(xdate20-xdate20(1),dataProvincia_20.sum_sum_TOTALE_20-BASELINE(index_avg)); 
+
+prev_data = find(xdate20==737871);
+FitTbl_cvd_prev = FitTbl_cvd(1:prev_data,:);
+[dates_20_prev,index_avg_prev,index_20_prev] = intersect(xdatetime(1:prev_data),xdatetime20(1:prev_data));
 
 modelfun = @(b,x) b(3)*(exp(-(x(:, 1)-b(1))/b(2))./(b(2).*(1+exp(-(x(:, 1)-b(1))/b(2))).^2)); 
-beta0 = [80, 4, 2000]; % Guess values to start with. 
+beta0 = [80, 4, 3000]; % Guess values to start with. 
 Model_cvd = fitnlm(FitTbl_cvd, modelfun, beta0);
+Model_cvd_prev = fitnlm(FitTbl_cvd_prev, modelfun, beta0);
 
 b0 = Model_cvd.Coefficients{:, 'Estimate'};
+b0_prev = Model_cvd_prev.Coefficients{:, 'Estimate'};
 % Create smoothed/regressed data using the model:
 % yFitted = coefficients(1) + coefficients(2) * exp(-coefficients(3)*xdata');
 FittedCVD = table(xdatetime20,dataProvincia_20.sum_sum_TOTALE_20,...
-                modelfun(b0,xdate20-xdate20(1)) + FittedAVG.Var4(index_avg));
-            
+                modelfun(b0,xdate20-xdate20(1)) + BASELINE(index_avg));      
 FittedCVD.Properties.VariableNames = {'xdatetime20','CoviD','Fitted_CoviD'};
 
+FittedCVD_prev = table(xdatetime20(1:prev_data),dataProvincia_20.sum_sum_TOTALE_20(1:prev_data),...
+                modelfun(b0_prev,xdate20(1:prev_data)-xdate20(1)) + BASELINE(index_avg_prev));
+FittedCVD_prev.Properties.VariableNames = {'xdatetime20','CoviD','Fitted_CoviD_21_MAR'};
+
 b1 = b0 + 5*Model_cvd.Coefficients{:, 'SE'};
-FittedCVD.SE1 = modelfun(b1,xdate20-xdate20(1)) + FittedAVG.Var4(index_avg);
+FittedCVD.SE1 = modelfun(b1,xdate20-xdate20(1)) + BASELINE(index_avg);
 
 b2 = b0 - 5*Model_cvd.Coefficients{:, 'SE'};
-FittedCVD.SE2 = modelfun(b2,xdate20-xdate20(1)) + FittedAVG.Var4(index_avg);
+FittedCVD.SE2 = modelfun(b2,xdate20-xdate20(1)) + BASELINE(index_avg);
 
 [C, diffDate] = setdiff(xdatetime,xdatetime20);
 diffDate = [diffDate(1)-1; diffDate];
 PreviewCVD = table(xdatetime(diffDate),...
-                   modelfun(b0,xdate(diffDate)-xdate20(1)) + FittedAVG.Var4(diffDate),...
-                   modelfun(b1,xdate(diffDate)-xdate20(1)) + FittedAVG.Var4(diffDate),...
-                   modelfun(b2,xdate(diffDate)-xdate20(1)) + FittedAVG.Var4(diffDate));
-               
+                   modelfun(b0,xdate(diffDate)-xdate20(1)) + BASELINE(diffDate),...
+                   modelfun(b1,xdate(diffDate)-xdate20(1)) + BASELINE(diffDate),...
+                   modelfun(b2,xdate(diffDate)-xdate20(1)) + BASELINE(diffDate));
+
 PreviewCVD.Properties.VariableNames = {'xdatetime','Fitted_CoviD','SE1','SE2'};
+
+[C, diffDate_prev] = setdiff(xdatetime,xdatetime20(1:prev_data));
+diffDate_prev = [diffDate_prev(1)-1; diffDate_prev];
+PreviewCVD_prev = table(xdatetime(diffDate_prev),...
+                        modelfun(b0_prev,xdate(diffDate_prev)-xdate20(1)) + BASELINE(diffDate_prev));
+                    
+PreviewCVD_prev.Properties.VariableNames = {'xdatetime','Fitted_Prev'};
+
 
 %% plot
 
@@ -141,29 +164,78 @@ p2.Color = [1,0,0];
 p4 = plot(FittedCVD.xdatetime20,FittedCVD.Fitted_CoviD,'DisplayName','CoviD fitted');
 p4.Color = [1,0,0];
 p4.LineWidth = 1;
-p5 = plot(FittedCVD.xdatetime20,FittedCVD.SE1,'DisplayName','CoviD fitted SE+');
-%p5.LineStyle = '--';
-p5.Color = [0.8500 0.3250 0.0980];
-p6 = plot(FittedCVD.xdatetime20,FittedCVD.SE2,'DisplayName','CoviD fitted SE-');
-%p6.LineStyle = '--';
-p6.Color = [0.9290 0.6940 0.1250];
+% p5 = plot(FittedCVD.xdatetime20,FittedCVD.SE1,'DisplayName','CoviD fitted SE+');
+% %p5.LineStyle = '--';
+% p5.Color = [0.8500 0.3250 0.0980];
+% p6 = plot(FittedCVD.xdatetime20,FittedCVD.SE2,'DisplayName','CoviD fitted SE-');
+% %p6.LineStyle = '--';
+% p6.Color = [0.9290 0.6940 0.1250];
 
 % plot fitted previews
-p7 = plot(PreviewCVD.xdatetime,PreviewCVD.Fitted_CoviD,'DisplayName','CoviD fitted');
+p7 = plot(PreviewCVD.xdatetime,PreviewCVD.Fitted_CoviD,'DisplayName','CoviD forecast');
 p7.Color = [0.4660 0.6740 0.1880];
 p7.LineWidth = 1;
-p8 = plot(PreviewCVD.xdatetime,PreviewCVD.SE1,'DisplayName','');
-p8.LineStyle = '--';
-p8.Color = [0.8500 0.3250 0.0980];
-p9 = plot(PreviewCVD.xdatetime,PreviewCVD.SE2,'DisplayName','');
-p9.LineStyle = '--';
-p9.Color = [0.9290 0.6940 0.1250];
+% p8 = plot(PreviewCVD.xdatetime,PreviewCVD.SE1,'DisplayName','');
+% p8.LineStyle = '--';
+% p8.Color = [0.8500 0.3250 0.0980];
+% p9 = plot(PreviewCVD.xdatetime,PreviewCVD.SE2,'DisplayName','');
+% p9.LineStyle = '--';
+% p9.Color = [0.9290 0.6940 0.1250];
+
+legend
+hold off;
+
+%% plot 21/28
+
+f4 = figure();  
+hold on;
+% plot baseline with fitted line
+p11 = plot(FittedAVG.xdatetime,FittedAVG.Var2,'DisplayName','Mortalità 19');
+p11.LineStyle = 'none';
+p11.Marker = 'o';
+p11.MarkerSize = 4;
+p11.Color = [0,0,1];
+
+
+% plot CoviD with Fitted Line last date
+p22 = plot(FittedCVD.xdatetime20,FittedCVD.CoviD,'DisplayName','CoviD 28 Mar');
+p22.LineStyle = 'none';
+p22.Marker = 'd';
+p22.MarkerSize = 4;
+p22.Color = [1,0,0];
+p44 = plot(FittedCVD.xdatetime20,FittedCVD.Fitted_CoviD,'DisplayName','CoviD fitted 28 Mar');
+p44.Color = [1,0,0];
+p44.LineWidth = 2;
+
+% plot fitted previews
+p77 = plot(PreviewCVD.xdatetime,PreviewCVD.Fitted_CoviD,'DisplayName','CoviD forecast');
+p77.Color = [0.4660 0.6740 0.1880];
+p77.LineWidth = 2;
+
+% plot CoviD with Fitted Line previus date
+p33 = plot(FittedCVD_prev.xdatetime20,FittedCVD_prev.CoviD,'DisplayName','CoviD 21 Mar');
+p33.LineStyle = 'none';
+p33.Marker = 'd';
+p33.MarkerSize = 4;
+p33.Color = [0,0,0];
+p55 = plot(FittedCVD_prev.xdatetime20,FittedCVD_prev.Fitted_CoviD_21_MAR,'DisplayName','CoviD fitted 21 MAR');
+p55.LineStyle = '--';
+p55.LineWidth = 1;
+p55.Color = [0,0,0];
+
+% plot fitted previews previous date
+p88 = plot(PreviewCVD_prev.xdatetime,PreviewCVD_prev.Fitted_Prev,'DisplayName','CoviD forecast 21 Mar');
+p88.Color = [0.4,0.4,0.4];
+p88.LineWidth = 2;
+p88.LineStyle = ':';
+
 
 legend
 hold off;
                         
-%% numero contagiati
+%% numero contagiati 
 letalIndex = [1/0.0051 1/0.0114 1/0.0178];
+%letalIndex = [1 1 1];
 
 stimacontagio = cumsum(FitTbl_cvd{52:end,2}*letalIndex);
 stimacontagio(stimacontagio<0)=0;
@@ -191,25 +263,26 @@ hold off;
 %% plot deads for any year
 
 figure();
-h1=plot(xdatetime,dataProvincia.M15,'LineStyle','none','Marker','o');
+h1=plot(xdatetime,dataProvincia.M15,'LineStyle','none','Marker','o','DisplayName','2015');
 set(h1, 'markerfacecolor', get(h1, 'color'));
 h1.MarkerSize = 3;
 hold on;
-h2=plot(xdatetime,dataProvincia.M16,'LineStyle','none','Marker','o');
+h2=plot(xdatetime,dataProvincia.M16,'LineStyle','none','Marker','o','DisplayName','2016');
 set(h2, 'markerfacecolor', get(h2, 'color'));
 h2.MarkerSize = 3;
-h3=plot(xdatetime,dataProvincia.M17,'LineStyle','none','Marker','o');
+h3=plot(xdatetime,dataProvincia.M17,'LineStyle','none','Marker','o','DisplayName','2017');
 set(h3, 'markerfacecolor', get(h3, 'color'));
 h3.MarkerSize = 3;
-h4=plot(xdatetime,dataProvincia.M18,'LineStyle','none','Marker','o');
+h4=plot(xdatetime,dataProvincia.M18,'LineStyle','none','Marker','o','DisplayName','2018');
 set(h4, 'markerfacecolor', get(h4, 'color'));
 h4.MarkerSize = 3;
-h5=plot(xdatetime,dataProvincia.M19,'LineStyle','none','Marker','o');
+h5=plot(xdatetime,dataProvincia.M19,'LineStyle','none','Marker','o','DisplayName','2019');
 set(h5, 'markerfacecolor', get(h5, 'color'));
 h5.MarkerSize = 3;
-h6=plot(xdatetime20,dataProvincia_20.sum_sum_TOTALE_20,'LineStyle','none','Marker','o');
+h6=plot(xdatetime20,dataProvincia_20.sum_sum_TOTALE_20,'LineStyle','none','Marker','o','DisplayName','2020');
 set(h6, 'markerfacecolor', get(h6, 'color'));
 h6.MarkerSize = 3;
+legend
 hold off;
 
 
