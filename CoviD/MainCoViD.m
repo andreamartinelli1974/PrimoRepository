@@ -1,6 +1,6 @@
 clc, clear all, close all
 
-mov_av = 1;
+mov_av = 2;
 
 datadead = readtable("comune_giorno.csv");
 datadead.GE = datadead.GE + 20200000;
@@ -60,8 +60,8 @@ dataProvincia.sum_MEDIA_15_19 = dataProvincia.M19; %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% get moving average data
-if mov_av == 1
-    steps = [2,0];
+if mov_av > 0
+    steps = [mov_av,0];
     dataProvincia_20.sum_sum_TOTALE_20 = movmean(dataProvincia_20.sum_sum_TOTALE_20,steps);
     dataProvincia.sum_MEDIA_15_19 = movmean(dataProvincia.sum_MEDIA_15_19,steps);
     dataProvincia.M15 = movmean(dataProvincia.M15,steps);
@@ -72,7 +72,9 @@ if mov_av == 1
 end
 
 
-%% elaborate data                          
+%% elaborate data 
+
+% daily dead
 xdate = unique(datenum(num2str(dataBG_byComune_avg.GE),'yyyymmdd'));
 xdatetime = datetime(xdate,'ConvertFrom','datenum');
 
@@ -91,7 +93,7 @@ c0 = Model_cvd_baseline.Coefficients.Estimate;
 FittedAVG = table(xdatetime,dataProvincia.sum_MEDIA_15_19,modelfun_avg(a0,xdate),c0(1)+c0(2)*xdate);
 
 %%%% BASELINE CHOISE %%%%%%%
-BASELINE = FittedAVG.Var3; %
+BASELINE = FittedAVG.Var4; %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [dates_20,index_avg,index_20] = intersect(xdatetime,xdatetime20);
@@ -102,8 +104,16 @@ prev_data = find(xdate20==737871);
 FitTbl_cvd_prev = FitTbl_cvd(1:prev_data,:);
 [dates_20_prev,index_avg_prev,index_20_prev] = intersect(xdatetime(1:prev_data),xdatetime20(1:prev_data));
 
-modelfun = @(b,x) b(3)*(exp(-(x(:, 1)-b(1))/b(2))./(b(2).*(1+exp(-(x(:, 1)-b(1))/b(2))).^2)); 
-beta0 = [80, 4, 3000]; % Guess values to start with. 
+%%%%%%%%%%%%%%%%%%%%% modelfun for covid fitting %%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+%modelfun = @(b,x) b(3)*(exp(-(x(:, 1)-b(1))/b(2))./(b(2).*(1+exp(-(x(:, 1)-b(1))/b(2))).^2)); 
+%beta0 = [80, 4, 3000]; % Guess values to start with. 
+%
+modelfun = @(b,x) b(3).*(exp(-b(2).*x(:, 1)).*(b(2)^b(1)).*(x(:, 1).^(b(1)-1)))./gamma(b(1)-1); 
+beta0 = [80, 1, 4000]; % Guess values to start with. 
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 Model_cvd = fitnlm(FitTbl_cvd, modelfun, beta0);
 Model_cvd_prev = fitnlm(FitTbl_cvd_prev, modelfun, beta0);
 
@@ -141,6 +151,19 @@ PreviewCVD_prev = table(xdatetime(diffDate_prev),...
                     
 PreviewCVD_prev.Properties.VariableNames = {'xdatetime','Fitted_Prev'};
 
+%% cumulative daily dead
+cumdead = table(FitTbl_cvd.Var1,cumsum(FitTbl_cvd.Var2));
+
+modelfun_log =  @(b,x) b(3)./(1+exp(-b(2).*(x(:,1)-b(1))));
+beta0 = [80 0.5 4000];
+
+Model_log = fitnlm(cumdead, modelfun_log, beta0);
+
+b0_log = Model_cvd.Coefficients{:, 'Estimate'};
+
+FittedLOG = table(xdatetime20,cumdead.Var2,...
+                  modelfun_log(b0_log,xdate20-xdate20(1)));      
+FittedLOG.Properties.VariableNames = {'xdatetime20','CoviD','Fitted_CoviD'};
 
 %% plot
 
