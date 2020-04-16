@@ -6,7 +6,7 @@ datadead = readtable("comune_giorno.csv");
 datadead.GE = datadead.GE + 20200000;
 
 %% get Bergamo Prov. data without not available data
-dataBG = datadead((datadead.PROV == 16),:); 
+dataBG = datadead((datadead.REG == 3),:); 
 % dataBG = datadead; 
 
 % aggregate 
@@ -160,7 +160,7 @@ cumdead = cumdead(start(end)+lag:end,:);
 datelog = xdatetime20(start(end)+lag:end);
 
 modelfun_log =  @(b,x) b(3)./(1+exp(-b(2).*(x(:,1)-b(1))));
-beta0 = [80 0.2 cumdead.Var2(end)];
+beta0 = [80 0.2 4000];
 
 b0_log = lsqcurvefit(modelfun_log,beta0,cumdead.Var1,cumdead.Var2);%(cumdead, modelfun_log, beta0);
 
