@@ -153,17 +153,31 @@ PreviewCVD_prev.Properties.VariableNames = {'xdatetime','Fitted_Prev'};
 
 %% cumulative daily dead
 cumdead = table(FitTbl_cvd.Var1,cumsum(FitTbl_cvd.Var2));
+%start = find(cumdead.Var2<0);
+start = 0;
+lag = 1; % must be >1;
+cumdead = cumdead(start(end)+lag:end,:);
+datelog = xdatetime20(start(end)+lag:end);
 
 modelfun_log =  @(b,x) b(3)./(1+exp(-b(2).*(x(:,1)-b(1))));
-beta0 = [80 0.5 4000];
+beta0 = [79.5 0.185 4200];
 
 Model_log = fitnlm(cumdead, modelfun_log, beta0);
 
 b0_log = Model_cvd.Coefficients{:, 'Estimate'};
 
-FittedLOG = table(xdatetime20,cumdead.Var2,...
-                  modelfun_log(b0_log,xdate20-xdate20(1)));      
+FittedLOG = table(datelog,cumdead.Var2,...
+                  modelfun_log(beta0,xdate20(start(end)+lag:end)-xdate20(1)));      
 FittedLOG.Properties.VariableNames = {'xdatetime20','CoviD','Fitted_CoviD'};
+
+PreviewLOG = table(xdatetime(diffDate),modelfun_log(beta0,xdate(diffDate)-xdate20(1)));
+PreviewLOG.Properties.VariableNames = {'xdatetime','Fitted_LOG'};
+
+plot(FittedLOG.xdatetime20,FittedLOG.CoviD,'DisplayName','CoviD');
+hold on;
+plot(FittedLOG.xdatetime20,FittedLOG.Fitted_CoviD,'DisplayName','Fitted_CoviD');
+plot(PreviewLOG.xdatetime,PreviewLOG.Fitted_LOG,'DisplayName','Forecast');
+hold off;
 
 %% plot
 
