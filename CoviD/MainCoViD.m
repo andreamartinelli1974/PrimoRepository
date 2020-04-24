@@ -1,5 +1,8 @@
 clc, clear all, close all
 
+lastdate = '4 Apr';
+prevdate = '28 Mar';
+PreviousDate = datenum('28 mar 2020');
 mov_av = 2;
 
 datadead = readtable("comune_giorno.csv");
@@ -102,17 +105,17 @@ BASELINE = FittedAVG.Var3; %
 
 FitTbl_cvd = table(xdate20-xdate20(1),dataProvincia_20.sum_sum_TOTALE_20-BASELINE(index_avg)); 
 
-prev_data = find(xdate20==737871);
+prev_data = find(xdate20==PreviousDate);
 FitTbl_cvd_prev = FitTbl_cvd(1:prev_data,:);
 [dates_20_prev,index_avg_prev,index_20_prev] = intersect(xdatetime(1:prev_data),xdatetime20(1:prev_data));
 
 %%%%%%%%%%%%%%%%%%%%% modelfun for covid fitting %%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-modelfun = @(b,x) b(3)*(exp(-(x(:, 1)-b(1))/b(2))./(b(2).*(1+exp(-(x(:, 1)-b(1))/b(2))).^2)); 
-beta0 = [80, 4, 3000]; % Guess values to start with. 
+% modelfun = @(b,x) b(3)*(exp(-(x(:, 1)-b(1))/b(2))./(b(2).*(1+exp(-(x(:, 1)-b(1))/b(2))).^2)); 
+% beta0 = [80, 4, 3000]; % Guess values to start with. 
 %
-% modelfun = @(b,x) b(3).*(exp(-b(2).*x(:, 1)).*(b(2)^b(1)).*(x(:, 1).^(b(1)-1)))./gamma(b(1)-1); 
-% beta0 = [80, 1, 4000]; % Guess values to start with. 
+modelfun = @(b,x) b(3).*(exp(-b(2).*x(:, 1)).*(b(2)^b(1)).*(x(:, 1).^(b(1)-1)))./gamma(b(1)-1); 
+beta0 = [80, 1, 4000]; % Guess values to start with. 
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -233,33 +236,33 @@ p11.Color = [0,0,1];
 
 
 % plot CoviD with Fitted Line last date
-p22 = plot(FittedCVD.xdatetime20,FittedCVD.CoviD,'DisplayName','CoviD 8 Apr');
+p22 = plot(FittedCVD.xdatetime20,FittedCVD.CoviD,'DisplayName',['CoviD ',lastdate]);
 p22.LineStyle = 'none';
 p22.Marker = 'd';
 p22.MarkerSize = 4;
 p22.Color = [1,0,0];
-p44 = plot(FittedCVD.xdatetime20,FittedCVD.Fitted_CoviD,'DisplayName','CoviD fitted 8 Apr');
+p44 = plot(FittedCVD.xdatetime20,FittedCVD.Fitted_CoviD,'DisplayName',['CoviD fitted ',lastdate]);
 p44.Color = [1,0,0];
 p44.LineWidth = 2;
 
 % plot fitted previews
-p77 = plot(PreviewCVD.xdatetime,PreviewCVD.Fitted_CoviD,'DisplayName','CoviD forecast');
+p77 = plot(PreviewCVD.xdatetime,PreviewCVD.Fitted_CoviD,'DisplayName',['CoviD forecast ',lastdate]);
 p77.Color = [0.4660 0.6740 0.1880];
 p77.LineWidth = 2;
 
 % plot CoviD with Fitted Line previus date
-p33 = plot(FittedCVD_prev.xdatetime20,FittedCVD_prev.CoviD,'DisplayName','CoviD 21 Mar');
+p33 = plot(FittedCVD_prev.xdatetime20,FittedCVD_prev.CoviD,'DisplayName',['CoviD ' ,prevdate]);
 p33.LineStyle = 'none';
 p33.Marker = 'd';
 p33.MarkerSize = 4;
 p33.Color = [0,0,0];
-p55 = plot(FittedCVD_prev.xdatetime20,FittedCVD_prev.Fitted_CoviD_21_MAR,'DisplayName','CoviD fitted 21 Mar');
+p55 = plot(FittedCVD_prev.xdatetime20,FittedCVD_prev.Fitted_CoviD_21_MAR,'DisplayName',['CoviD fitted ',prevdate]);
 p55.LineStyle = '--';
 p55.LineWidth = 1;
 p55.Color = [0,0,0];
 
 % plot fitted previews previous date
-p88 = plot(PreviewCVD_prev.xdatetime,PreviewCVD_prev.Fitted_Prev,'DisplayName','CoviD forecast 21 Mar');
+p88 = plot(PreviewCVD_prev.xdatetime,PreviewCVD_prev.Fitted_Prev,'DisplayName',['CoviD forecast ',prevdate]);
 p88.Color = [0.4,0.4,0.4];
 p88.LineWidth = 2;
 p88.LineStyle = ':';
