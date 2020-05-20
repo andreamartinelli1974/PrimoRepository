@@ -1,15 +1,15 @@
 clc, clear all, close all
 
-lastdate = '4 Apr';
-prevdate = '28 Mar';
-PreviousDate = datenum('28 mar 2020');
+lastdate = '15 Apr';
+prevdate = '4 Apr';
+PreviousDate = datenum('4 apr 2020');
 mov_av = 2;
 
-datadead = readtable("comune_giorno.csv");
+datadead = readtable("comuni_giornaliero.csv");
 datadead.GE = datadead.GE + 20200000;
 
 %% get Bergamo Prov. data without not available data
-dataBG = datadead((datadead.PROV == 16),:); 
+dataBG = datadead((datadead.REG == 3),:); 
 %dataBG = datadead; 
 
 % aggregate 
