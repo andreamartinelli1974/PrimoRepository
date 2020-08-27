@@ -3,7 +3,7 @@ close all; clear all; clc;
 clear all;
 close all;
 
-toTest = 1; % 1 = reads from FMP , 0 from dashboard
+toTest = 0; % 1 = reads from FMP , 0 from dashboard
 
 % **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
 DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
@@ -57,7 +57,10 @@ addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
 
 if toTest
     %%% read the assets from AllStocksStyle20200731_with_tickers.xlsx 
+    disp('loading data');
+    inputData = readtable('AllStocksStyle20200731_with_tickers.xlsx');
     
+    tickersList = strcat(inputData.ticker,' Equity');
     
 else
     %%% read the ptf from PRTU_STATIC.xlsx
@@ -98,49 +101,71 @@ else
     end
     
     tickersList = unique(AssetList);
-    AssetTable = array2table(tickersList);
-    
-    N = size(tickersList,1);
-    uparams.fields = {'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'};
-    uparams.override_fields = [];
-    uparams.history_start_date = today()-365;
-    uparams.history_end_date = today();
-    uparams.DataFromBBG = DataFromBBG;
-    
-    disp('');
-    disp('get securities type');
-    
-    for k=1:N
-        uparams.ticker = tickersList{k,1};
-        uparams.granularity = 'daily';
-        U = Utilities(uparams);
-        U.GetBBG_StaticData;
-        AssetTable.SecType(k) = U.Output.BBG_getdata.SECURITY_TYP;
-        AssetTable.SecType2(k) = U.Output.BBG_getdata.SECURITY_TYP2;
-        AssetTable.Underlying(k) = U.Output.BBG_getdata.UNDERLYING_SECURITY_DES;
-    end
-    
-    disp('');
-    disp('get securities history');
-    for k=1:N
-        
-        uparams.fields = 'PX_LAST';
-        if isempty(AssetTable.Underlying{k})
-            uparams.ticker = tickersList{k,1};
-        else
-            uparams.ticker = AssetTable.Underlying{k};
-        end
-        U = Utilities(uparams);
-        U.GetHistPrices;
-        ts = U.Output.HistInfo;
-        
-        Tname = ['a_',regexprep(uparams.ticker,'[^a-zA-Z0-9]','_')];
-        
-        AllAssets.(Tname).ticker = tickersList{k,1};
-        AllAssets.(Tname).AssetType = AssetTable.SecType2{k};
-        AllAssets.(Tname).TimeSeries = ts;
-        
-    end
     
 end
+
+AssetTable = array2table(tickersList);
+
+N = size(tickersList,1);
+uparams.fields = {'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'};
+uparams.override_fields = [];
+uparams.history_start_date = today()-365;
+uparams.history_end_date = today();
+uparams.DataFromBBG = DataFromBBG;
+
+disp('');
+disp('get securities type');
+
+for k=1:N
+    uparams.ticker = tickersList{k,1};
+    uparams.granularity = 'daily';
+    U = Utilities(uparams);
+    U.GetBBG_StaticData;
+    AssetTable.SecType(k) = U.Output.BBG_getdata.SECURITY_TYP;
+    AssetTable.SecType2(k) = U.Output.BBG_getdata.SECURITY_TYP2;
+    AssetTable.Underlying(k) = U.Output.BBG_getdata.UNDERLYING_SECURITY_DES;
+end
+
+disp('');
+disp('get securities history');
+for k=1:N
+    
+    uparams.fields = 'PX_LAST';
+    if isempty(AssetTable.Underlying{k})
+        uparams.ticker = tickersList{k,1};
+    else
+        uparams.ticker = AssetTable.Underlying{k};
+    end
+    U = Utilities(uparams);
+    U.GetHistPrices;
+    ts = U.Output.HistInfo;
+    
+    Tname = ['a_',regexprep(uparams.ticker,'[^a-zA-Z0-9]','_')];
+    
+    AllAssets.(Tname).ticker = tickersList{k,1};
+    AllAssets.(Tname).AssetType = AssetTable.SecType2{k};
+    AllAssets.(Tname).TimeSeries.Prices = ts;
+    
+    % calculate returns
+    retParams.lag = 1
+    retParams.pct = 1
+    retParams.logret = 1
+    retParams.ExtendedLag = 3
+    % params assumed constant for now
+    retParams.rolldates = [];
+    retParams.last_roll = [];
+    retParams.EliminateFlag = 0;
+    retParams.data1 = ts;
+    retParams.data2 = [];
+    
+    U = Utilities(retParams);
+    U.RetCalc;
+    U.Output.CleanRet;
+    tsr = U.Output.CleanRet;
+    
+    
+    
+end
+    
+
 

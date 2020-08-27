@@ -144,7 +144,26 @@ for k=1:N
     
     AllAssets.(Tname).ticker = tickersList{k,1};
     AllAssets.(Tname).AssetType = AssetTable.SecType2{k};
-    AllAssets.(Tname).TimeSeries = ts;
+    AllAssets.(Tname).TimeSeries.Prices = ts;
+    
+    % calculate returns
+    retParams.lag = 1;
+    retParams.pct = 1;
+    retParams.logret = 1;
+    retParams.ExtendedLag = 3;
+    % params assumed constant for now
+    retParams.rolldates = [];
+    retParams.last_roll = [];
+    retParams.EliminateFlag = 0;
+    retParams.data1 = ts;
+    retParams.data2 = [];
+    
+    U = Utilities(retParams);
+    U.RetCalc;
+    U.Output.CleanRet;
+    tsr = U.Output.CleanRet;
+    
+    AllAssets.(Tname).TimeSeries.Returns = tsr;
     
 end
     
