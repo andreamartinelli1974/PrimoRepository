@@ -5,6 +5,9 @@ close all;
 
 toTest = 0; % 1 = reads from FMP , 0 from dashboard
 
+start_date = today()-365;
+end_date = today();
+
 % **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
 DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
 DataFromBBG.folder = [cd,'\BloombergCallsData\'];
@@ -109,7 +112,7 @@ AssetTable = array2table(tickersList);
 N = size(tickersList,1);
 uparams.fields = {'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'};
 uparams.override_fields = [];
-uparams.history_start_date = today()-365;
+uparams.history_start_date = today()-3;
 uparams.history_end_date = today();
 uparams.DataFromBBG = DataFromBBG;
 
@@ -147,10 +150,10 @@ for k=1:N
     AllAssets.(Tname).TimeSeries.Prices = ts;
     
     % calculate returns
-    retParams.lag = 1
-    retParams.pct = 1
-    retParams.logret = 1
-    retParams.ExtendedLag = 3
+    retParams.lag = 1;
+    retParams.pct = 1;
+    retParams.logret = 1;
+    retParams.ExtendedLag = 3;
     % params assumed constant for now
     retParams.rolldates = [];
     retParams.last_roll = [];
@@ -163,9 +166,18 @@ for k=1:N
     U.Output.CleanRet;
     tsr = U.Output.CleanRet;
     
-    
+    AllAssets.(Tname).TimeSeries.Returns = tsr;
     
 end
-    
+
+%%
+a = AllAssets.a_1099_HK_Equity.TimeSeries.Returns;
+b = AllAssets.a_1797_HK_Equity.TimeSeries.Returns;
+tic
+[distance,mtx] = mydtw(a(:,2),b(:,2),50);
+toc
+
+disp(num2str(distance));
+
 
 

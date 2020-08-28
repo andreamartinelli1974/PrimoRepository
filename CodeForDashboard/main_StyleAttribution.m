@@ -5,6 +5,9 @@ close all;
 
 toTest = 0; % 1 = reads from FMP , 0 from dashboard
 
+start_date = today()-365;
+end_date = today();
+
 % **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
 DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
 DataFromBBG.folder = [cd,'\BloombergCallsData\'];
@@ -109,8 +112,8 @@ AssetTable = array2table(tickersList);
 N = size(tickersList,1);
 uparams.fields = {'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'};
 uparams.override_fields = [];
-uparams.history_start_date = today()-365;
-uparams.history_end_date = today();
+uparams.history_start_date = start_date;
+uparams.history_end_date = end_date;
 uparams.DataFromBBG = DataFromBBG;
 
 disp('');
@@ -166,6 +169,15 @@ for k=1:N
     AllAssets.(Tname).TimeSeries.Returns = tsr;
     
 end
-    
+
+%%
+a = AllAssets.a_1099_HK_Equity.TimeSeries.Returns;
+b = AllAssets.a_1797_HK_Equity.TimeSeries.Returns;
+tic
+[distance,mtx] = mydtw(a(:,2),b(:,2),50);
+toc
+
+disp(num2str(distance));
+
 
 

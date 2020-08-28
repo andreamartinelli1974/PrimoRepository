@@ -1,4 +1,4 @@
-function dtw_matrix =  mydtw(s, t, window)
+function [distance,dtw_matrix] =  mydtw(s, t, window)
     n = numel(s);
     m = numel(t);
     w = max([window, abs(n-m)]);
@@ -25,6 +25,7 @@ function dtw_matrix =  mydtw(s, t, window)
             dtw_matrix(i, j) = cost + last_min;
         end
     end
+    distance = dtw_matrix(end,end);
 end
         
         
