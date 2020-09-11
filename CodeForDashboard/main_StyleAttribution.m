@@ -3,10 +3,15 @@ close all; clear all; clc;
 clear all;
 close all;
 
-toTest = 0; % 1 = reads from FMP , 0 from dashboard
+toTest = 1; % 1 = reads from FMP , 0 from dashboard
+
+DTW_window = 10; % window for DTW
+Nperc = 5; % number of groups the asset must be divided.
 
 start_date = today()-365;
 end_date = today();
+first_date_dtw = eomdate(today()-70); % get the last day of two previous months
+min_hystory = 60;
 
 % **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
 DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
@@ -57,17 +62,63 @@ addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
     ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\'],...
     [dsk,'Users\' userId '\Documents\GitHub\PrimoRepository\CodeForDashboard']); 
 
+%% read the styles' equitylines
+% get stoxx 600 hystory price for calendar reference
+uparams.ticker = 'SXXP Index';
+uparams.fields = 'PX_LAST';
+uparams.granularity = 'daily';
+uparams.override_fields = [];
+uparams.history_start_date = start_date;
+uparams.history_end_date = end_date;
+uparams.DataFromBBG = DataFromBBG;
+
+U = Utilities(uparams);
+U.GetHistPrices;
+stoxx_ts = U.Output.HistInfo;
+
+% load data and calculate returns from start date to end date
+disp('loading styles data');
+StylesData = readtable('StyleEquityLine.xlsx');
+
+StylesNames = StylesData.Properties.VariableNames(:,2:2:end);
+
+for i = 1:numel(StylesNames)
+    date = StylesData.(StylesData.Properties.VariableNames{2*i-1});
+    date = datenum(date);
+    prices = StylesData.(StylesData.Properties.VariableNames{2*i});
+    [~,StilesIdx,~] = intersect(date,stoxx_ts(:,1));
+    Styles.(StylesNames{i}).TimeSeries.Prices = [date(StilesIdx), prices(StilesIdx)];
+    
+    % calculate returns
+    retParams.lag = 1;
+    retParams.pct = 1;
+    retParams.logret = 1;
+    retParams.ExtendedLag = 3;
+    % params assumed constant for now
+    retParams.rolldates = [];
+    retParams.last_roll = [];
+    retParams.EliminateFlag = 0;
+    retParams.data1 = Styles.(StylesNames{i}).TimeSeries.Prices;
+    retParams.data2 = [];
+    
+    U = Utilities(retParams);
+    U.RetCalc;
+    U.Output.CleanRet;
+    Styles.(StylesNames{i}).TimeSeries.Returns = U.Output.CleanRet; 
+end
+
+%% read the portfolio
 
 if toTest
     %%% read the assets from AllStocksStyle20200731_with_tickers.xlsx 
-    disp('loading data');
+    disp('loading portfolio data');
     inputData = readtable('AllStocksStyle20200731_with_tickers.xlsx');
     
     tickersList = strcat(inputData.ticker,' Equity');
     
 else
     %%% read the ptf from PRTU_STATIC.xlsx
-    disp('loading data');
+    disp('loading portfolo data');
     inputData = readtable('PRTU_STATIC.xlsx');
     
     TableNames = inputData.Properties.VariableNames;
@@ -143,11 +194,11 @@ for k=1:N
     U.GetHistPrices;
     ts = U.Output.HistInfo;
     
-    Tname = ['a_',regexprep(uparams.ticker,'[^a-zA-Z0-9]','_')];
+    Tname{k} = ['a_',regexprep(uparams.ticker,'[^a-zA-Z0-9]','_')];
     
-    AllAssets.(Tname).ticker = tickersList{k,1};
-    AllAssets.(Tname).AssetType = AssetTable.SecType2{k};
-    AllAssets.(Tname).TimeSeries.Prices = ts;
+    AllAssets.(Tname{k}).ticker = tickersList{k,1};
+    AllAssets.(Tname{k}).AssetType = AssetTable.SecType2{k};
+    AllAssets.(Tname{k}).TimeSeries.Prices = ts;
     
     % calculate returns
     retParams.lag = 1;
@@ -160,24 +211,71 @@ for k=1:N
     retParams.EliminateFlag = 0;
     retParams.data1 = ts;
     retParams.data2 = [];
-    
+    try
     U = Utilities(retParams);
     U.RetCalc;
     U.Output.CleanRet;
     tsr = U.Output.CleanRet;
+    catch AM
+        disp("");
+    end
     
-    AllAssets.(Tname).TimeSeries.Returns = tsr;
+    AllAssets.(Tname{k}).TimeSeries.Returns = tsr;
     
 end
 
-%%
-a = AllAssets.a_1099_HK_Equity.TimeSeries.Returns;
-b = AllAssets.a_1797_HK_Equity.TimeSeries.Returns;
-tic
-[distance,mtx] = mydtw(a(:,2),b(:,2),50);
-toc
+%% measuring time series distances using DTW
+DistanceMtx = zeros(numel(Tname),numel(StylesNames));
 
-disp(num2str(distance));
+disp('');
+disp('measuring equityline distance');
+for k=1:N
+    date = AllAssets.(Tname{k}).TimeSeries.Returns(:,1);
+    fd = find(date(:,1) >= first_date_dtw);
+    fd = fd(1);
+    Return = AllAssets.(Tname{k}).TimeSeries.Returns(fd,2);
+    for i = 1:numel(StylesNames)
+        date = Styles.(StylesNames{i}).TimeSeries.Returns(:,1);
+        fd = find(date(:,1) >= first_date_dtw);
+        fd = fd(1);
+        StyleReturn = Styles.(StylesNames{i}).TimeSeries.Returns(fd,2);
+        DistanceMtx(k,i) = mydtw(StyleReturn,Return,DTW_window);
+    end
+end
 
+% create the table
+DistanceTable = array2table(DistanceMtx);
+DistanceTable.Properties.VariableNames = StylesNames;
+DistanceTable.Properties.RowNames = Tname;
 
+%find the minimum distance for any asset
+[misureMin,index] = min(DistanceMtx(:,1:numel(StylesNames)),[],2,'linear');
+StyleMapMtx = zeros(numel(Tname),numel(StylesNames));
+StyleMapMtx(index) = 1;
+StyleMapTable = array2table(StyleMapMtx);
+StyleMapTable.Properties.VariableNames = strcat(StylesNames,"_Min");
+StyleMapTable.Properties.RowNames = Tname;
 
+StyleMapTable = [tickersList, StyleMapTable];
+
+% use measure distribution to find the thresholds (5% and 95% to be in and
+% to be out)
+
+StyleMapMtx = zeros(numel(Tname),numel(StylesNames));
+
+for i = 1:numel(StylesNames)
+    Styles.(StylesNames{i}).Measure.In  = prctile(DistanceMtx(:,i),20);
+    Styles.(StylesNames{i}).Measure.Out = prctile(DistanceMtx(:,i),80);
+    indexIn  = find(DistanceMtx(:,i)<Styles.(StylesNames{i}).Measure.In);
+    indexOut = find(DistanceMtx(:,i)>Styles.(StylesNames{i}).Measure.Out);
+    StyleMapMtx(indexIn,i)  =  1;
+    StyleMapMtx(indexOut,i) = -1;
+end
+
+StyleMapTable2 = array2table(StyleMapMtx);
+StyleMapTable2.Properties.VariableNames = strcat(StylesNames,"_Pctl");
+StyleMapTable2.Properties.RowNames = Tname;
+
+StyleMapTable = [StyleMapTable, StyleMapTable2];
+
+writetable(StyleMapTable,['StyleMapTable_',num2str(today()),'.xlsx']);
