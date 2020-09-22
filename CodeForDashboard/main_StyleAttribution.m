@@ -60,6 +60,7 @@ end
 addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
     ['C:\Users\' userId '\Desktop\EFI\CODE\output\FMP\'],...
     ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\'],...
+    ['C:\Users\' userId '\Desktop\'],...
     [dsk,'Users\' userId '\Documents\GitHub\PrimoRepository\CodeForDashboard']); 
 
 %% read the styles' equitylines
@@ -116,6 +117,9 @@ if toTest
     
     tickersList = strcat(inputData.ticker,' Equity');
     
+    
+    % tickersList = readtable('MSCI All Country.xlsx','Sheet','msci');
+    % tickersList = readtable('MSCI All Country.xlsx','Sheet','Sheet2');
 else
     %%% read the ptf from PRTU_STATIC.xlsx
     disp('loading portfolo data');
@@ -159,9 +163,11 @@ else
 end
 
 AssetTable = array2table(tickersList);
+AllTickers = [];
+AllIndex = [];
 
 N = size(tickersList,1);
-uparams.fields = {'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'};
+uparams.fields = {'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'}; %,'DY993','DS428'};
 uparams.override_fields = [];
 uparams.history_start_date = start_date;
 uparams.history_end_date = end_date;
@@ -178,7 +184,13 @@ for k=1:N
     AssetTable.SecType(k) = U.Output.BBG_getdata.SECURITY_TYP;
     AssetTable.SecType2(k) = U.Output.BBG_getdata.SECURITY_TYP2;
     AssetTable.Underlying(k) = U.Output.BBG_getdata.UNDERLYING_SECURITY_DES;
+    %AllTickers = [AllTickers; uparams.ticker ;strcat(U.Output.BBG_getdata.DY993{:},' Equity')];
+    %AllIndex = [AllIndex ; strcat(U.Output.BBG_getdata.DS428{:},' Index')];
 end
+%AllTickers = unique(AllTickers);
+%AllIndexUnique = unique(AllIndex);
+
+%occurrences = cellfun(@(x) sum(ismember(AllIndex,x)),AllIndexUnique,'un',0)
 
 disp('');
 disp('get securities history');
@@ -264,8 +276,8 @@ StyleMapTable = [tickersList, StyleMapTable];
 StyleMapMtx = zeros(numel(Tname),numel(StylesNames));
 
 for i = 1:numel(StylesNames)
-    Styles.(StylesNames{i}).Measure.In  = prctile(DistanceMtx(:,i),20);
-    Styles.(StylesNames{i}).Measure.Out = prctile(DistanceMtx(:,i),80);
+    Styles.(StylesNames{i}).Measure.In  = prctile(DistanceMtx(:,i),40);
+    Styles.(StylesNames{i}).Measure.Out = prctile(DistanceMtx(:,i),60);
     indexIn  = find(DistanceMtx(:,i)<Styles.(StylesNames{i}).Measure.In);
     indexOut = find(DistanceMtx(:,i)>Styles.(StylesNames{i}).Measure.Out);
     StyleMapMtx(indexIn,i)  =  1;
