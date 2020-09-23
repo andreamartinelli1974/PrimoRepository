@@ -57,6 +57,8 @@ addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+StyleMapPath = 'X:\SalaOp\EquityPTF\Dashboard\outRiskExcel';
+
 %% READ THE BC MODEL TABLE WITH "ALL ASSETS" CLASSIFICATION
 
 % disp('loading index data');
@@ -111,33 +113,44 @@ for i = 1:size(portfolioNames,2)
 end
 
 %% get the relevant info from bbg
-N = size(AssetTable,1);
+tic
+disp('get fundamental ticker from bbg');
+
+tickerlist = unique(AssetTable.tickers);
+N = size(tickerlist,1);
 uparams.fields = {'DX895'};%{'UNDERLYING_SECURITY_DES','SECURITY_TYP','SECURITY_TYP2'}; %,'DY993','DS428'};
 uparams.override_fields = [];
 uparams.history_start_date = today()-20;
 uparams.history_end_date = today();
 uparams.DataFromBBG = DataFromBBG;
 
-disp('');
-disp('get securities type');
 
 for k=1:N
-    uparams.ticker = AssetTable{k,1};
+    uparams.ticker = tickerlist{k,1};
     uparams.granularity = 'daily';
     U = Utilities(uparams);
     U.GetBBG_StaticData;
     
     if isempty(U.Output.BBG_getdata.DX895{:})
-        AssetTable.FundTicker{k} = 'N/A';
+        tickerlist{k,2} = 'N/A';
     else
-        AssetTable.FundTicker{k} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
-    end
-%     AssetTable.SecType(k) = U.Output.BBG_getdata.SECURITY_TYP;
-%     AssetTable.SecType2(k) = U.Output.BBG_getdata.SECURITY_TYP2;
-%     AssetTable.Underlying(k) = U.Output.BBG_getdata.UNDERLYING_SECURITY_DES;
-%     
+        tickerlist{k,2} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
+    end   
 end
 
+for i = 1:size(AssetTable,1)
+    tkrIndex = find(contains(tickerlist(:,1),AssetTable.tickers{i}));
+    AssetTable.FundTicker2{i} = tickerlist{tkrIndex,2};
+end
+
+toc
 % MATCH THE STYLE CLASSIFICATION FOR ANY ASSET IN ANY PORTFOLIO
 
-% WRITE THE OUTPUT TABLE IN RELEVANT SHEET OF THE DASHBOARD
+%% WRITE THE OUTPUT TABLE IN RELEVANT SHEET OF THE DASHBOARD
+disp('writing the final table');
+
+myfilename = fullfile(StyleMapPath,'StyleMap.xlsx');
+delete(myfilename);
+writetable(AssetTable,myfilename);
+
+disp('DONE');
