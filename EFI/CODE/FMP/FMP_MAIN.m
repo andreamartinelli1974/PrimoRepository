@@ -16,11 +16,21 @@ writeFlag = 0;
 
 
 userId = lower(getenv('USERNAME'));
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
 
-inputpath  = ['C:\Users\',userId,'\Desktop\EFI\CODE\input\'];
-outputpath = ['C:\Users\',userId,'\Desktop\EFI\CODE\output\FMP\'];
+if strcmp(userId,'u093799')
+    addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\']);
+    addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\anagrafiche']);
+    
+    inputpath  = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\'];
+    outputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\output\FMP\'];
+    
+else
+    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
+    
+    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\CODE\input\'];
+    outputpath = ['C:\Users\',userId,'\Desktop\EFI\CODE\output\FMP\'];
+end
 
 
 
