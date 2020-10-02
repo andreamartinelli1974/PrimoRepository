@@ -4,6 +4,44 @@ close all
 
 writeFlag = 0;
 
+% **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
+DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
+DataFromBBG.folder = [cd,'\BloombergCallsData\'];
+ 
+if DataFromBBG.save2disk
+    if exist('BloombergCallsData','dir')==7
+        rmdir(DataFromBBG.folder(1:end-1),'s');
+    end
+    mkdir(DataFromBBG.folder(1:end-1));
+end
+
+try
+    % javaaddpath('C:\blp\DAPI\blpapi3.jar');
+    DataFromBBG.BBG_conn = blp; % throw error when Bloomberg is not installed
+    pause(2);
+    while isempty(DataFromBBG.BBG_conn) % ~isconnection(DataFromBBG.BBG_conn)
+        pause(2);
+    end
+    
+    DataFromBBG.NOBBG = false(1); % True when Bloomberg is NOT available and to use previopusly saved data
+    
+catch ME
+    % dlgTitle = 'BBG ALERT';
+    % dlgQuest = 'BLOOMBER NOT AVAILABLE! Do you with to continue?';
+    % answer = questdlg(dlgQuest,dlgTitle,'yes','no','no');
+    % if strcmp(answer,'no')
+    %     return
+    % end
+    if isdeployed
+    RunMsg = msgbox('Connection to Bloomberg not available', ...
+        'Deployed code execution');
+    end
+    DataFromBBG.BBG_conn = [];
+    DataFromBBG.NOBBG = true(1); % if true (on machines with no BBG terminal), data are recovered from previously saved files (.save2disk option above)
+end
+% *************************************************************************
+
+
 %% Factor Mimicking PTF
 %  This code is used to create the historical time series of all the
 %  risk-factors from Apr 2005. taking as input the updated datasandwich, the function retuns 4 output files:
@@ -16,6 +54,18 @@ writeFlag = 0;
 
 
 userId = lower(getenv('USERNAME'));
+
+userId = getenv('USERNAME');
+if strcmp(userId,'U093799')
+    dsk = 'D:\';
+else
+    dsk = 'C:\';
+end
+
+%%%%%%*********** TO DO: UPDATE THE PATH IN FINAL VERSION ***********%%%%%%
+
+addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
+        ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\']);
 
 if strcmp(userId,'u093799')
     addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\']);
