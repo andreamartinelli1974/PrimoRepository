@@ -55,8 +55,7 @@ end
 
 userId = lower(getenv('USERNAME'));
 
-userId = getenv('USERNAME');
-if strcmp(userId,'U093799')
+if strcmp(userId,'u093799')
     dsk = 'D:\';
 else
     dsk = 'C:\';
@@ -128,17 +127,12 @@ lastSedolsList = lastSedols{1};
 AllStocksFactorRankingTable = [array2table(lastSedolsList),array2table(nan(numel(lastSedolsList),numel(riskFactors)-4))];
 AllStocksFactorRankingTable.Properties.VariableNames = [{'sedol'},riskFactors(3:end-2)];
 AllStocksFactorRankingTable_Digital = AllStocksFactorRankingTable;
-AllStocksFactorRankingTable_Digital_2 = AllStocksFactorRankingTable;
 
 Factor2Style = readtable('rf2supergroup.xlsx','Sheet','Foglio1');
 Styles = unique(Factor2Style.SUPER_GROUP);
-AllStocksStyle_58_1 = [array2table(lastSedolsList),array2table(zeros(numel(lastSedolsList),3*numel(Styles)))];
-Median_Styles = strcat('Mediana_',Styles);
-Moda_Styles = strcat('Moda_',Styles);
-AllStocksStyle_58_1.Properties.VariableNames = ['sedol';Styles;Median_Styles;Moda_Styles];
-AllStocksStyle_58_2 = AllStocksStyle_58_1;
-AllStocksStyle_32_1 = AllStocksStyle_58_1;
-AllStocksStyle_32_2 = AllStocksStyle_58_1;
+AllStocksStyle = [array2table(lastSedolsList),array2table(zeros(numel(lastSedolsList),numel(Styles)))];
+AllStocksStyle.Properties.VariableNames = ['sedol';Styles];
+
 
 % check numero fattori
 if size(Factor2Style,1) ~= numel(riskFactors)-4
@@ -206,23 +200,18 @@ for j=3:numerorf-2 % scorro i fattori (parto da 3 perchè primi due sono ritorni 
                 
                 for i=1:numel(costituents{percentile})
                     idx = find(strcmp(AllStocksFactorRankingTable.sedol, costituents{percentile}(i)));
-                    AllStocksFactorRankingTable.(riskFactors{j})(idx)= percentile;
+                    
                     switch percentile
                         case 1
                             AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = 1;
-                            AllStocksFactorRankingTable_Digital_2.(riskFactors{j})(idx) = 1;
                         case 2
-                            AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = 0;
-                            AllStocksFactorRankingTable_Digital_2.(riskFactors{j})(idx) = 1;
+                            AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = 1;
                         case Npercentili -1
-                            AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = 0;
-                            AllStocksFactorRankingTable_Digital_2.(riskFactors{j})(idx) = -1;
+                            AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = -1;
                         case Npercentili
                             AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = -1;
-                            AllStocksFactorRankingTable_Digital_2.(riskFactors{j})(idx) = -1;
                         otherwise
                             AllStocksFactorRankingTable_Digital.(riskFactors{j})(idx) = 0;
-                            AllStocksFactorRankingTable_Digital_2.(riskFactors{j})(idx) = 0;
                     end
                 end
                 costSize = costSize + numel(costituents{percentile});
@@ -245,7 +234,9 @@ for j=3:numerorf-2 % scorro i fattori (parto da 3 perchè primi due sono ritorni 
                         end
             
         end
-
+        if t==cubodatiClean.Count
+            AllStocksFactorRankingTable.(riskFactors{j})= factor;
+        end
     end
     %%      stampa composizione dei portafogli fattoriali
     %  we need to print the output table bit by bit to not overstep the excel row's limits
@@ -321,15 +312,15 @@ for j=3:numerorf-2 % scorro i fattori (parto da 3 perchè primi due sono ritorni 
         [sortpuntret_LS, index]=sort(resultsFactor.puntret_LS);
         for i=1:length(sortpuntret_LS)
             pos=find(sortpuntret_LS==resultsFactor.puntret_LS(i));
-            ranking_1(i)=pos;
+            ranking(i)=pos;
         end
-        rankMatrix(:,matrixretcol)=ranking_1;
+        rankMatrix(:,matrixretcol)=ranking;
         
         
         
         if ismember(riskf,table2array(rf32Legend))
             matrixRet32(:,matrixretcol32)=[resultsFactor.puntret_LS];
-            rankMatrix32(:,matrixretcol32)=ranking_1;
+            rankMatrix32(:,matrixretcol32)=ranking;
             matrixretcol32=matrixretcol32+1;
         end
         
@@ -359,115 +350,111 @@ for i = 1:snum % per ogni sedol
     for j = 1:numel(Styles) % seleziono lo stile
         % trovo i fattori che lo compongono e carico i pesi per ogni
         % fattore
-        sidx_58 = find(strcmp(Factor2Style.SUPER_GROUP,Styles{j}));
+        sidx = find(strcmp(Factor2Style.SUPER_GROUP,Styles{j}));
         
-        stylefactors = Factor2Style.RF(sidx_58);
-        fweight_1 = Factor2Style.weight(sidx_58);
-        fweight_2 = Factor2Style.weight(sidx_58);
-        fweight_32_1 = Factor2Style.weight(sidx_58); %verranno rinormalizzati in seguito su 32 fattori
-        fweight_32_2 = Factor2Style.weight(sidx_58); %verranno rinormalizzati in seguito su 32 fattori
+        stylefactors = Factor2Style.RF(sidx);
+        fweight = Factor2Style.weight(sidx);
         
-        WeightedStyleRank_58_1 = NaN(size(fweight_1));
-        StyleRank_58_1 = NaN(size(fweight_1));
-        WeightedStyleRank_58_2 = NaN(size(fweight_2));
-        StyleRank_58_2 = NaN(size(fweight_1));
-        WeightedStyleRank_32_1 = NaN(size(fweight_32_1));
-        StyleRank_32_1 = NaN(size(fweight_32_1));
-        WeightedStyleRank_32_2 = NaN(size(fweight_32_2));
-        StyleRank_32_2 = NaN(size(fweight_32_2));
+        WeightedStyleRank = NaN(size(fweight));
+        StyleRank = NaN(size(fweight));
         
         for k = 1:numel(stylefactors) % per ogni fattore che compone lo stile
             % trovo il ranking assegnato al sedol
             findex = find(strcmp(myfactornames,stylefactors{k}));
-            sidx_32 = find(strcmp(table2array(rf32Legend),stylefactors{k}));
-            ranking_1 = AllStocksFactorRankingTable_Digital{i,findex};
-            ranking_2 = AllStocksFactorRankingTable_Digital_2{i,findex};
+            ranking = AllStocksFactorRankingTable_Digital{i,findex};
             
-            if ~isnan(ranking_1)
-                WeightedStyleRank_58_1(k) = fweight_1(k)*ranking_1;
-                StyleRank_58_1(k) = ranking_1;
-                if ~isempty(sidx_32)
-                    WeightedStyleRank_32_1(k) = fweight_32_1(k)*ranking_1;
-                    StyleRank_32_1(k) = ranking_1;
-                end
+            if ~isnan(ranking)
+                WeightedStyleRank(k) = fweight(k)*ranking;
+                StyleRank(k) = ranking;
             end
-            
-            if ~isnan(ranking_2)
-                WeightedStyleRank_58_2(k) = fweight_2(k)*ranking_2;
-                StyleRank_58_2(k) = ranking_2;
-                if ~isempty(sidx_32)
-                    WeightedStyleRank_32_2(k) = fweight_32_2(k)*ranking_2;
-                    StyleRank_32_2(k) = ranking_2;
-                end
-            end
-            
         end
         
         % crea medie mode e mediane sui 58 fattori (unweighted)
         
-%         WeightedStyleRank_58_2 = WeightedStyleRank_58_2(~isnan(WeightedStyleRank_58_2)); % elimino i NaN
-%         fweight_1 = fweight_1(~isnan(WeightedStyleRank_58_2)); % elimino i NaN
-%         media_style = mean(WeightedStyleRank_58_2)/sum(fweight_1); % calcolo la moda
-        
-        if sum(isnan(StyleRank_58_1))==numel(StyleRank_58_1)
+        if sum(isnan(StyleRank))==numel(StyleRank)
             clear StyleRank_58_1;
-            StyleRank_58_1 = 0;
+            StyleRank = 0;
         end
-        StyleRank_58_1 = StyleRank_58_1(~isnan(StyleRank_58_1)); % elimino i NaN
-        media_style = mean(StyleRank_58_1); % calcolo la media
-        median_style = median(StyleRank_58_1); % calcolo la mediana
-        moda_style = mode(StyleRank_58_1); % calcolo la moda
-        AllStocksStyle_58_1{i,j+1} = media_style;
-        AllStocksStyle_58_1{i,j+numel(Styles)+1} = median_style;
-        AllStocksStyle_58_1{i,j+2*numel(Styles)+1} = moda_style;
+        StyleRank = StyleRank(~isnan(StyleRank)); % elimino i NaN
+        media_style = mean(StyleRank); % calcolo la media
+        median_style = median(StyleRank); % calcolo la mediana
+        if abs(median_style) == 0.5
+            median_style = sign(median_style);
+        end
+        moda_style = mode(StyleRank); % calcolo la moda
+        AllStocksStyle{i,j+1} = median_style;
+        %AllStocksStyle{i,j+numel(Styles)+1} = median_style;
+        %AllStocksStyle{i,j+2*numel(Styles)+1} = moda_style;
         
-        if sum(isnan(StyleRank_58_2))==numel(StyleRank_58_2)
-            clear StyleRank_58_2;
-            StyleRank_58_2 = 0;
-        end
-        StyleRank_58_2 = StyleRank_58_2(~isnan(StyleRank_58_2)); % elimino i NaN
-        media_style = mean(StyleRank_58_2); % calcolo la media
-        median_style = median(StyleRank_58_2); % calcolo la mediana
-        moda_style = mode(StyleRank_58_2); % calcolo la moda
-        AllStocksStyle_58_2{i,j+1} = media_style;
-        AllStocksStyle_58_2{i,j+numel(Styles)+1} = median_style;
-        AllStocksStyle_58_2{i,j+2*numel(Styles)+1} = moda_style;
-        
-        % crea medie mode e mediane sui 32 fattori (unweighted)
-        if sum(isnan(StyleRank_32_1))==numel(StyleRank_32_1)
-            clear StyleRank_32_1;
-            StyleRank_32_1 = 0;
-        end
-        StyleRank_32_1 = StyleRank_32_1(~isnan(StyleRank_32_1)); % elimino i NaN
-        media_style = mean(StyleRank_32_1); % calcolo la media
-        median_style = median(StyleRank_32_1); % calcolo la mediana
-        moda_style = mode(StyleRank_32_1); % calcolo la moda
-        AllStocksStyle_32_1{i,j+1} = media_style;
-        AllStocksStyle_32_1{i,j+numel(Styles)+1} = median_style;
-        AllStocksStyle_32_1{i,j+2*numel(Styles)+1} = moda_style;
-        
-        if sum(isnan(StyleRank_32_2))==numel(StyleRank_32_2)
-            clear StyleRank_32_2;
-            StyleRank_32_2 = 0;
-        end
-        StyleRank_32_2 = StyleRank_32_2(~isnan(StyleRank_32_2)); % elimino i NaN
-        media_style = mean(StyleRank_32_2); % calcolo la media
-        median_style = median(StyleRank_32_2); % calcolo la mediana
-        moda_style = mode(StyleRank_32_2); % calcolo la moda
-        AllStocksStyle_32_2{i,j+1} = media_style;
-        AllStocksStyle_32_2{i,j+numel(Styles)+1} = median_style;
-        AllStocksStyle_32_2{i,j+2*numel(Styles)+1} = moda_style;
     end
 end
+%% get data from bbg
+sedollist = strcat('/sedol1/',AllStocksStyle.sedol);
+
+N = size(sedollist,1);
+% get the fields: EQ_FUND_CODE LONG_COMP_NAME ICB_INDUSTRY_NAME ICB_SECTOR_NAME CUR_MKT_CAP 
+uparams.fields = {'DX895','DS520','DX941','DX945','RR902'};
+uparams.override_fields = [];
+uparams.history_start_date = today()-20;
+uparams.history_end_date = today();
+uparams.DataFromBBG = DataFromBBG;
+
+
+for k=1:N
+    uparams.ticker = sedollist{k,1};
+    uparams.granularity = 'daily';
+    U = Utilities(uparams);
+    U.GetBBG_StaticData;
+    
+    % EQ_FUND_CODE
+    if isempty(U.Output.BBG_getdata.DX895{:})
+        sedollist{k,2} = 'N/A';
+    else
+        sedollist{k,2} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
+    end  
+    % LONG_COMP_NAME
+    if isempty(U.Output.BBG_getdata.DS520{:})
+        sedollist{k,3} = 'N/A';
+    else
+        sedollist{k,3} = U.Output.BBG_getdata.DS520{:};
+    end 
+    % ICB_INDUSTRY_NAME
+    if isempty(U.Output.BBG_getdata.DX941{:})
+        sedollist{k,4} = 'N/A';
+    else
+        sedollist{k,4} = U.Output.BBG_getdata.DX941{:};
+    end 
+    % ICB_SECTOR_NAME
+    if isempty(U.Output.BBG_getdata.DX945{:})
+        sedollist{k,5} = 'N/A';
+    else
+        sedollist{k,5} = U.Output.BBG_getdata.DX945{:};
+    end 
+    % CUR_MKT_CAP
+    if isempty(U.Output.BBG_getdata.RR902)
+        sedollist{k,6} = 'N/A';
+    else
+        sedollist{k,6} = U.Output.BBG_getdata.RR902;
+    end 
+end
+InfoTable = array2table(sedollist(:,2:end));
+InfoTable.Properties.VariableNames = {'EQ_FUND_CODE' 'LONG_COMP_NAME' 'ICB_INDUSTRY_NAME' 'ICB_SECTOR_NAME' 'CUR_MKT_CAP'};
+
+date = array2table(repmat(ref_date_legend(end),size(sedollist,1),1));
+date.Properties.VariableNames = {'RF'};
+
+% rearrange AllStocksFactorRankingTable column
+TableColumnNames =['sedol'; Factor2Style.RF];
+AllStocksFactorRankingTable = AllStocksFactorRankingTable(:,TableColumnNames);
+
+OutForDashBoard = [date,InfoTable,AllStocksFactorRankingTable(:,2:end),AllStocksStyle(:,2:end)];
+OutForDashBoard = sortrows(OutForDashBoard,[4 -6]);
 
 %% tables for output
 writetable(AllStocksFactorRankingTable,[outputpath,'AllStocksFactorRanking_',num2str(ref_date_legend(end)),'.xlsx']);
-writetable(AllStocksFactorRankingTable_Digital,[outputpath,'AllStocksFactorRankingTable_Digital_1_',num2str(ref_date_legend(end)),'.xlsx']);
-writetable(AllStocksFactorRankingTable_Digital_2,[outputpath,'AllStocksFactorRankingTable_Digital_2_',num2str(ref_date_legend(end)),'.xlsx']);
-writetable(AllStocksStyle_58_1,[outputpath,'AllStocksStyle_58_1_',num2str(ref_date_legend(end)),'.xlsx']);
-writetable(AllStocksStyle_58_2,[outputpath,'AllStocksStyle_58_2_',num2str(ref_date_legend(end)),'.xlsx']);
-writetable(AllStocksStyle_32_1,[outputpath,'AllStocksStyle_32_1_',num2str(ref_date_legend(end)),'.xlsx']);
-writetable(AllStocksStyle_32_2,[outputpath,'AllStocksStyle_32_2_',num2str(ref_date_legend(end)),'.xlsx']);
+writetable(AllStocksFactorRankingTable_Digital,[outputpath,'AllStocksFactorRankingTable_Digital_',num2str(ref_date_legend(end)),'.xlsx']);
+writetable(AllStocksStyle,[outputpath,'AllStocksStyle_',num2str(ref_date_legend(end)),'.xlsx']);
+writetable(OutForDashBoard,[outputpath,'factor&style_',num2str(ref_date_legend(end)),'.xlsx']);
 
 [outputTableLO,outputTableLS,outputTableLB,outputTableMatriceExcel]=createTableoutput(rfNoneliminati,timeseries_str,matriceLO,matriceLS,matriceLB,matriceExcel,labelMatriceExcel,legenda,bmk);
 
