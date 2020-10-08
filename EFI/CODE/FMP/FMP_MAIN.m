@@ -2,7 +2,7 @@ clear all
 clc
 close all
 
-writeFlag = 0;
+writeFlag = 1;
 
 % **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
 DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
@@ -431,8 +431,8 @@ for k=1:N
         sedollist{k,5} = U.Output.BBG_getdata.DX945{:};
     end 
     % CUR_MKT_CAP
-    if isempty(U.Output.BBG_getdata.RR902)
-        sedollist{k,6} = 'N/A';
+    if iscell(U.Output.BBG_getdata.RR902)
+        sedollist{k,6} = NaN;
     else
         sedollist{k,6} = U.Output.BBG_getdata.RR902;
     end 
@@ -448,6 +448,9 @@ TableColumnNames =['sedol'; Factor2Style.RF];
 AllStocksFactorRankingTable = AllStocksFactorRankingTable(:,TableColumnNames);
 
 OutForDashBoard = [date,InfoTable,AllStocksFactorRankingTable(:,2:end),AllStocksStyle(:,2:end)];
+
+OutForDashBoard.CUR_MKT_CAP = cell2mat(OutForDashBoard.CUR_MKT_CAP);
+OutForDashBoard(find(isnan(OutForDashBoard.CUR_MKT_CAP)),:) = [];
 OutForDashBoard = sortrows(OutForDashBoard,[4 -6]);
 
 %% tables for output
