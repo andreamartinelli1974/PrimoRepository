@@ -90,7 +90,7 @@ Npercentili=5;
 startpoint=20050429;
 
 %% CREO CUBO DATI
-[cubodatiSector,sedolchkMap,Nscarichi,riskFactors,ref_date_legend]=read_sandwich('datasandwich.xlsx',startpoint);
+[cubodatiSector,sedolchkMap,Nscarichi,riskFactors,ref_date_legend]=read_sandwich('datasandwich.xlsx',startpoint,inputpath);
 %[cubodatiSector,sedolchkMap,Nscarichi,riskFactors,ref_date_legend]=read_sandwich('US_portfolio_screen (Monthly update).xlsx',startpoint);
 
 %% CREO TIME SERIES PARTENDO DALLA PRIMA DATA (APRILE 2005)

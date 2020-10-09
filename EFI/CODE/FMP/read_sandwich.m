@@ -1,4 +1,4 @@
-function [cubodati,sedolMap, Nscarichi,rf,ref_date_legend]=read_factors_Map_Sector(fileName,startpoint)
+function [cubodati,sedolMap, Nscarichi,rf,ref_date_legend]=read_sandwich(fileName,startpoint,savepath)
 % Reads data from excel
 %  It reads factors of each asset for every date
 %
@@ -23,9 +23,9 @@ function [cubodati,sedolMap, Nscarichi,rf,ref_date_legend]=read_factors_Map_Sect
 % importexcel e factortable e save sono comandi alternativi a load
 importexcel=datastore(fileName);
 factortable=readall(importexcel);
-%load ('factortable.mat');
+% load ([savepath,'factortable.mat']);
 % in alternativa a save: tasto dx su tablename e save as
-save ('factortable.mat');
+save ([savepath,'factortable.mat'],factortable);
 rf=factortable.Properties.VariableNames(3:end);
 risk32=readtable('rf2supergroup.xlsx','Sheet','rf32');
 factortableT=factortable;

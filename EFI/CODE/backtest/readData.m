@@ -1,4 +1,4 @@
-function [sandwichData,cardCompaniesbyDate,ref_data_legend,sedolchkTot]=readData(fileName)
+function [sandwichData,cardCompaniesbyDate,ref_data_legend,sedolchkTot]=readData(fileName,savepath)
 %% INPUT
 % fileName : name of the excel file that has to be
 % OUTPUT
@@ -15,12 +15,12 @@ function [sandwichData,cardCompaniesbyDate,ref_data_legend,sedolchkTot]=readData
 
 %%
 
-if isfile('factortable.mat')==1
-    load('factortable.mat');
+if isfile([savepath,'factortable.mat'])==1
+    load([savepath,'factortable.mat']);
 else
     importexcel=datastore(fileName,'Range','A:BL');
     factortable=readall(importexcel);
-    save('C:\Users\u369343\Desktop\EFI\CODE\input\factortable.mat');
+    save([savepath,'factortable.mat']);
 end
 ref_data_table=factortable{2:end-1,1};
 sandwichDataRet=factortable{2:end-1,3:4};%the 3 and the 4 colums of factortable are returns

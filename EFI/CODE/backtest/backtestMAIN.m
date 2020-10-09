@@ -16,14 +16,19 @@ addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
         ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\']);
 
 if strcmp(userId,'u093799')
+    addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\FMP\']);
     addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\']);
     addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\anagrafiche']);
-
+    
+    inputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\'];
     outputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\output\backtest\'];
 
 else
+    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\FMP']);
     addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
     addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
+    
+    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\CODE\input\'];
     outputpath= 'C:\Users\u369343\Desktop\EFI\CODE\output\backtest\';
 end
 
@@ -42,7 +47,7 @@ meanlag=3;
 
 %% backTestMAIN
 tic
-[sandwichData,cardCompaniesbyDate,ref_data_legend,sedolchkTot]=readData('datasandwich.xlsx');
+[sandwichData,cardCompaniesbyDate,ref_data_legend,sedolchkTot]=readData('datasandwich.xlsx',inputpath);
 [mapSort]=createMapSort('sortCriteria.xlsx'); %map for sort criteria of each factor (ASC or DESC)
 %leggo anche l'ultimo mese che però non ha i ritorni slittati di un mese
 %perchè non sono disponibili
