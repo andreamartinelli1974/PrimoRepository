@@ -2,10 +2,30 @@ clc
 clear
 close all
 
-userId = getenv('USERNAME');
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
-outputpath= 'C:\Users\u369343\Desktop\EFI\CODE\output\backtest\';
+userId = lower(getenv('USERNAME'));
+
+if strcmp(userId,'u093799')
+    dsk = 'D:\';
+else
+    dsk = 'C:\';
+end
+
+%%%%%%*********** TO DO: UPDATE THE PATH IN FINAL VERSION ***********%%%%%%
+
+addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
+        ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\']);
+
+if strcmp(userId,'u093799')
+    addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\']);
+    addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\anagrafiche']);
+
+    outputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\output\backtest\'];
+
+else
+    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
+    outputpath= 'C:\Users\u369343\Desktop\EFI\CODE\output\backtest\';
+end
 
 %% INPUT
 %string that indicates IC calculation: rolling, increasing, costant or median

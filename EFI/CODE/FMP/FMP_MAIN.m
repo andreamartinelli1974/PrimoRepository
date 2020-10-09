@@ -393,9 +393,9 @@ sedollist = strcat('/sedol1/',AllStocksStyle.sedol);
 
 N = size(sedollist,1);
 % get the fields: EQ_FUND_CODE LONG_COMP_NAME ICB_INDUSTRY_NAME ICB_SECTOR_NAME CUR_MKT_CAP 
-uparams.fields = {'DX895','DS520','DX941','DX945','RR902'};
+uparams.fields = {'DX895','DS520','DX941','DX945'}; %,'RR902'};
 uparams.override_fields = [];
-uparams.history_start_date = today()-20;
+uparams.history_start_date = today();
 uparams.history_end_date = today();
 uparams.DataFromBBG = DataFromBBG;
 
@@ -403,6 +403,7 @@ uparams.DataFromBBG = DataFromBBG;
 for k=1:N
     uparams.ticker = sedollist{k,1};
     uparams.granularity = 'daily';
+    uparams.fields = {'DX895','DS520','DX941','DX945'};
     U = Utilities(uparams);
     U.GetBBG_StaticData;
     
@@ -430,13 +431,22 @@ for k=1:N
     else
         sedollist{k,5} = U.Output.BBG_getdata.DX945{:};
     end 
+    
+    uparams.fields = {'RR902'};
+    uparams.currency = {'EUR'};
+    U = Utilities(uparams);
+    U.GetHistPrices
+    
     % CUR_MKT_CAP
-    if iscell(U.Output.BBG_getdata.RR902)
+    if isempty(U.Output.HistInfo)
         sedollist{k,6} = NaN;
     else
-        sedollist{k,6} = U.Output.BBG_getdata.RR902;
+        sedollist{k,6} = U.Output.HistInfo(2);
     end 
 end
+
+
+
 InfoTable = array2table(sedollist(:,2:end));
 InfoTable.Properties.VariableNames = {'EQ_FUND_CODE' 'LONG_COMP_NAME' 'ICB_INDUSTRY_NAME' 'ICB_SECTOR_NAME' 'CUR_MKT_CAP'};
 
