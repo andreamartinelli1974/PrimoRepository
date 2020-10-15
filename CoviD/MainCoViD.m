@@ -291,7 +291,7 @@ p24.Color = [0,0,0];
 legend
 
 %% numero contagiati 
-letalIndex = [1/0.0051 1/0.0114 1/0.0178];
+letalIndex = [1/0.015 1/0.023 1/0.035];
 %letalIndex = [1 1 1];
 
 stimacontagio = cumsum(FitTbl_cvd{52:end,2}*letalIndex);
