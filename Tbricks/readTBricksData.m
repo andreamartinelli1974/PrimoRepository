@@ -267,6 +267,8 @@ clear opts
 
 %% alternative way to compose the table
 
+mainPtfTable = [];
+
 % 1st step: join my_Positions_EOD and Options_EOD
 
 [pos_idx,opt_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Options_EOD.TBRICKS_INSTRUMENT_ID);
@@ -287,8 +289,28 @@ for i = 1:numel(pos_idx)
     newTable(pos_idx(i),:) = Options_EOD_toadd(opt_idx(i),:);
 end
 
-mainPtfTable = [my_Positions_EOD,Options_EOD];
+mainPtfTable = [my_Positions_EOD,newTable];
 
 % 2nd step: join my_Positions_EOD and Futures_EOD
+
+[pos_idx,fut_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Futures_EOD.TBRICKS_INSTRUMENT_ID);
+
+fieldsFromFutures = setdiff(Futures_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
+Futures_EOD_toadd = removevars(Futures_EOD,setdiff(Futures_EOD.Properties.VariableNames,fieldsFromFutures));
+
+O_2_add_vartypes = varfun(@class, Futures_EOD_toadd, 'OutputFormat', 'cell');
+
+sz = [numel(mainPtfTable.TBRICKS_INSTRUMENT_ID),numel(fieldsFromFutures)];
+newTable = table('Size',sz,'VariableTypes',O_2_add_vartypes,'VariableNames',fieldsFromFutures);
+
+fut_idx = fut_idx(fut_idx>0);
+pos_idx = find(pos_idx>0);
+
+
+for i = 1:numel(pos_idx)
+    newTable(pos_idx(i),:) = Futures_EOD_toadd(fut_idx(i),:);
+end
+
+mainPtfTable = [mainPtfTable,newTable];
 
 

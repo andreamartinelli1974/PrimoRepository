@@ -224,58 +224,60 @@ GREEKS_EOD = sortrows(GREEKS_EOD,'POSITIONID_FE');
 
 clear opts
 
-%% PUT EVERYTHING TOGETHER IN THE FINAL mainPtfTable (in 2 steps)
-
-% 1) left join between Positions_EOD and Options_EOD on the field
-% 'TBRICKS_INSTRUMENT_ID'
-
-% field names that are in Options_EOD, but not in Positions_EOD
-fieldsFromR = setdiff(Options_EOD.Properties.VariableNames,Positions_EOD.Properties.VariableNames);
-fieldsFromL = Positions_EOD.Properties.VariableNames; % I want all fields from left table
-
-[mainPtfTable,iLeft,iRight] = outerjoin(Positions_EOD,Options_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
-    'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
-[C,ia,ic] = unique(iLeft);
-mainPtfTable = mainPtfTable(C,:);
-
-% 2) left join between mainPtfTable and Futures_EOD on the field
-% 'TBRICKS_INSTRUMENT_ID'
-
-% field names that are in Futures_EOD, but not in mainPtfTable
-fieldsFromR = setdiff(Futures_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
-fieldsFromL = mainPtfTable.Properties.VariableNames; % I want all fields from left table
-
-mainPtfTable = outerjoin(mainPtfTable,Futures_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
-    'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
-
-% field names that are in ISIN_EOD, but not in mainPtfTable
-fieldsFromR = setdiff(ISIN_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
-fieldsFromL = mainPtfTable.Properties.VariableNames; % I want all fields from left table
-
-mainPtfTable = outerjoin(mainPtfTable,ISIN_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
-    'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
-
-
-% field names that are in GREEKS_EOD, but not in mainPtfTable
-fieldsFromR = setdiff(GREEKS_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
-fieldsFromL = Position_EOD.Properties.VariableNames; % I want all fields from left table
-
-mainPtfTable = outerjoin(mainPtfTable,GREEKS_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
-    'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
-
-writetable(mainPtfTable,'mainPtfTable.xlsx')
+% %% PUT EVERYTHING TOGETHER IN THE FINAL mainPtfTable (in 2 steps)
+% 
+% % 1) left join between Positions_EOD and Options_EOD on the field
+% % 'TBRICKS_INSTRUMENT_ID'
+% 
+% % field names that are in Options_EOD, but not in Positions_EOD
+% fieldsFromR = setdiff(Options_EOD.Properties.VariableNames,Positions_EOD.Properties.VariableNames);
+% fieldsFromL = Positions_EOD.Properties.VariableNames; % I want all fields from left table
+% 
+% [mainPtfTable,iLeft,iRight] = outerjoin(Positions_EOD,Options_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
+%     'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
+% [C,ia,ic] = unique(iLeft);
+% mainPtfTable = mainPtfTable(C,:);
+% 
+% % 2) left join between mainPtfTable and Futures_EOD on the field
+% % 'TBRICKS_INSTRUMENT_ID'
+% 
+% % field names that are in Futures_EOD, but not in mainPtfTable
+% fieldsFromR = setdiff(Futures_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
+% fieldsFromL = mainPtfTable.Properties.VariableNames; % I want all fields from left table
+% 
+% mainPtfTable = outerjoin(mainPtfTable,Futures_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
+%     'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
+% 
+% % field names that are in ISIN_EOD, but not in mainPtfTable
+% fieldsFromR = setdiff(ISIN_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
+% fieldsFromL = mainPtfTable.Properties.VariableNames; % I want all fields from left table
+% 
+% mainPtfTable = outerjoin(mainPtfTable,ISIN_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
+%     'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
+% 
+% 
+% % field names that are in GREEKS_EOD, but not in mainPtfTable
+% fieldsFromR = setdiff(GREEKS_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
+% fieldsFromL = Position_EOD.Properties.VariableNames; % I want all fields from left table
+% 
+% mainPtfTable = outerjoin(mainPtfTable,GREEKS_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
+%     'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
+% 
+% writetable(mainPtfTable,'mainPtfTable.xlsx')
 
 %% alternative way to compose the table
+
+% 1st step: join my_Positions_EOD and Options_EOD
 
 [pos_idx,opt_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Options_EOD.TBRICKS_INSTRUMENT_ID);
 
 fieldsFromOptions = setdiff(Options_EOD.Properties.VariableNames,Positions_EOD.Properties.VariableNames);
 Options_EOD_toadd = removevars(Options_EOD,setdiff(Options_EOD.Properties.VariableNames,fieldsFromOptions));
 
-opts.VariableNames = ["AMERICAN_EUROPEAN", "CURRENCY", "DEALID_FE", "DELIVERY_DATE", "DESCRIPTION", "EXERCISE_STYLE", "EXPIRY", "EXPIRY_LABEL", "F_CALL_PUT", "F_CASH_DELIVERY", "F_QUANTO", "FORWARD_START_DATE", "FORWARD_START_STYLE", "INSTRUMENTID_FE", "LAST_TRADING_DATE", "LOTSIZE", "PORTFOLIOID", "REF_DATE", "SEC_CATEGORY", "SEC_GROUP", "SEC_TYPE", "STARTDATE", "STRIKE", "TRADE_DATE", "UNDERLYINGID", "FORWARD_START_END_DATE", "IS_FORWARD_START", "QUANTO_CURR", "NOMINAL", "DIVIDENDID_FE", "TBRICKS_INSTRUMENT_ID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID", "INITIAL_PRICE", "ISSUE_ID"];
-opts.VariableTypes = ["string", "string", "double", "string", "string", "string", "datetime", "string", "string", "string", "string", "string", "double", "string", "string", "double", "string", "datetime", "string", "string", "string", "string", "double", "string", "string", "string", "string", "string", "string", "string", "string", "string", "string", "double", "string"];
+O_2_add_vartypes = varfun(@class, Options_EOD_toadd, 'OutputFormat', 'cell');
 
-v_idx = find(
+sz = [numel(my_Positions_EOD.TBRICKS_INSTRUMENT_ID),numel(fieldsFromOptions)];
+newTable = table('Size',sz,'VariableTypes',O_2_add_vartypes,'VariableNames',fieldsFromOptions);
 
 opt_idx = opt_idx(opt_idx>0);
 pos_idx = find(pos_idx>0);
@@ -285,4 +287,26 @@ for i = 1:numel(pos_idx)
     newTable(pos_idx(i),:) = Options_EOD_toadd(opt_idx(i),:);
 end
 
+mainPtfTable = [my_Positions_EOD,Options_EOD];
 
+% 2nd step: join my_Positions_EOD and Futures_EOD
+
+[pos_idx,fut_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Futures_EOD.TBRICKS_INSTRUMENT_ID);
+
+fieldsFromFutures = setdiff(Futures_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
+Futures_EOD_toadd = removevars(Futures_EOD,setdiff(Futures_EOD.Properties.VariableNames,fieldsFromFutures));
+
+O_2_add_vartypes = varfun(@class, Futures_EOD_toadd, 'OutputFormat', 'cell');
+
+sz = [numel(mainPtfTable.TBRICKS_INSTRUMENT_ID),numel(fieldsFromFutures)];
+newTable = table('Size',sz,'VariableTypes',O_2_add_vartypes,'VariableNames',fieldsFromFutures);
+
+fut_idx = fut_idx(fut_idx>0);
+pos_idx = find(pos_idx>0);
+
+
+for i = 1:numel(pos_idx)
+    newTable(pos_idx(i),:) = Futures_EOD_toadd(fut_idx(i),:);
+end
+
+mainPtfTable = [my_Positions_EOD,Options_EOD];
