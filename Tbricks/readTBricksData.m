@@ -45,17 +45,75 @@ opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
 % Import the data
 Positions_EOD = readtable(inputDataFolder + positions_eod_fileName, opts);
 
-idx = find(isnan(Positions_EOD.QUANTITY));
+%% READ GREEKS
 
-Positions_EOD(idx,:)=[];
+opts = delimitedTextImportOptions("NumVariables", 13);
 
-tempTable = varfun(@sum, Positions_EOD,'InputVariables','QUANTITY',...
+% Specify range and delimiter
+opts.DataLines = [3, Inf];
+opts.Delimiter = "\t";
+
+% Specify column names and types
+opts.VariableNames = ["ANALYTICDATE","CURRENCY","POSITIONID_FE","DELTA","GAMMA","LEG","PORTFOLIOID_FE","REF_DATE","RHO","THETA","VEGA","RHO-1","TBRICKS_INSTRUMENT_ID"];
+opts.VariableTypes = ["datetime","string","string","double","double","double","string","datetime","double","double","double","double","string"];
+
+% Specify file level properties
+opts.ExtraColumnsRule = "ignore";
+opts.EmptyLineRule = "read";
+
+% Specify variable properties
+opts = setvaropts(opts, ["POSITIONID_FE","PORTFOLIOID_FE","TBRICKS_INSTRUMENT_ID"], "WhitespaceRule", "preserve");
+opts = setvaropts(opts, ["POSITIONID_FE","DELTA","GAMMA","LEG","PORTFOLIOID_FE","RHO","THETA","VEGA","RHO-1"], "EmptyFieldRule", "auto");
+opts = setvaropts(opts, "ANALYTICDATE", "InputFormat", "yyyy-MM-dd");
+opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
+% Import the data
+GREEKS_EOD = readtable(inputDataFolder + greeks_eod_fileName, opts);
+
+GREEKS_EOD.LEG = [];
+
+GREEKS_EOD(end,:)= [];
+
+clear opts
+
+%% COMBINE PORTFOLIO_EOD AND GREEKS EOD, THAN FILTERING
+
+% 1st step: join my-Positions_EOD and GREEKS_EOD by POSITIONID
+[pos_idx,opt_idx] = ismember(Positions_EOD.POSITIONID,GREEKS_EOD.POSITIONID_FE);
+
+fieldsFromGreeks = setdiff(GREEKS_EOD.Properties.VariableNames,Positions_EOD.Properties.VariableNames);
+GREEKS_EOD_toadd = removevars(GREEKS_EOD,setdiff(GREEKS_EOD.Properties.VariableNames,fieldsFromGreeks));
+GREEKS_EOD_toadd = GREEKS_EOD_toadd(:,fieldsFromGreeks);
+
+G_2_add_vartypes = varfun(@class, GREEKS_EOD_toadd, 'OutputFormat', 'cell');
+
+sz = [numel(Positions_EOD.TBRICKS_INSTRUMENT_ID),numel(fieldsFromGreeks)];
+newTable = table('Size',sz,'VariableTypes',G_2_add_vartypes,'VariableNames',fieldsFromGreeks);
+
+opt_idx = opt_idx(opt_idx>0);
+pos_idx = find(pos_idx>0);
+
+
+for i = 1:numel(pos_idx)
+    newTable(pos_idx(i),:) = GREEKS_EOD_toadd(opt_idx(i),:);
+end
+
+my_Positions_EOD = [Positions_EOD,newTable];
+
+idx = isnan(my_Positions_EOD.QUANTITY);
+
+my_Positions_EOD(idx,:)=[];
+
+tempTable = varfun(@sum, my_Positions_EOD,'InputVariables',{'QUANTITY',...
+                        'DELTA','GAMMA','RHO','RHO_1','THETA','VEGA'},...
                         'GroupingVariables',{'CURRENCY','INSTRUMENTID_FE',...
-                        'MGROUP','PORTFOLIOID','TBRICKS_INSTRUMENT_ID'});
+                        'MGROUP','MTYPE','PORTFOLIOID','TBRICKS_INSTRUMENT_ID'});
+                    
 idx = find(tempTable.sum_QUANTITY==0);
 tempTable(idx,:) = [];
 tempTable.GroupCount = [];
-tempTable.Properties.VariableNames{end} = 'QUANTITY';
+names = tempTable.Properties.VariableNames;
+names = strrep(names,'sum_','');
+tempTable.Properties.VariableNames = names;
 
 my_Positions_EOD = tempTable;
 clear opts
@@ -192,48 +250,17 @@ ISIN_EOD(end,:)= [];
 
 clear opts
 
-%% READ GREEKS
 
-opts = delimitedTextImportOptions("NumVariables", 13);
+%% PUT EVERYTHING TOGETHER IN THE FINAL mainPtfTable (in 2 steps)
 
-% Specify range and delimiter
-opts.DataLines = [3, Inf];
-opts.Delimiter = "\t";
-
-% Specify column names and types
-opts.VariableNames = ["ANALYTICDATE","CURRENCY","POSITIONID_FE","DELTA","GAMMA","LEG","PORTFOLIOID_FE","REF_DATE","RHO","THETA","VEGA","RHO-1","TBRICKS_INSTRUMENT_ID"];
-opts.VariableTypes = ["datetime","string","string","double","double","double","string","datetime","double","double","double","double","string"];
-
-% Specify file level properties
-opts.ExtraColumnsRule = "ignore";
-opts.EmptyLineRule = "read";
-
-% Specify variable properties
-opts = setvaropts(opts, ["POSITIONID_FE","PORTFOLIOID_FE","TBRICKS_INSTRUMENT_ID"], "WhitespaceRule", "preserve");
-opts = setvaropts(opts, ["POSITIONID_FE","DELTA","GAMMA","LEG","PORTFOLIOID_FE","RHO","THETA","VEGA","RHO-1"], "EmptyFieldRule", "auto");
-opts = setvaropts(opts, "ANALYTICDATE", "InputFormat", "yyyy-MM-dd");
-opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
-% Import the data
-GREEKS_EOD = readtable(inputDataFolder + greeks_eod_fileName, opts);
-
-GREEKS_EOD.LEG = [];
-
-GREEKS_EOD(end,:)= [];
-
-GREEKS_EOD = sortrows(GREEKS_EOD,'POSITIONID_FE');
-
-clear opts
-
-% %% PUT EVERYTHING TOGETHER IN THE FINAL mainPtfTable (in 2 steps)
-% 
 % % 1) left join between Positions_EOD and Options_EOD on the field
 % % 'TBRICKS_INSTRUMENT_ID'
 % 
 % % field names that are in Options_EOD, but not in Positions_EOD
-% fieldsFromR = setdiff(Options_EOD.Properties.VariableNames,Positions_EOD.Properties.VariableNames);
-% fieldsFromL = Positions_EOD.Properties.VariableNames; % I want all fields from left table
+% fieldsFromR = setdiff(Options_EOD.Properties.VariableNames,my_Positions_EOD.Properties.VariableNames);
+% fieldsFromL = my_Positions_EOD.Properties.VariableNames; % I want all fields from left table
 % 
-% [mainPtfTable,iLeft,iRight] = outerjoin(Positions_EOD,Options_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
+% [mainPtfTable,iLeft,iRight] = outerjoin(my_Positions_EOD,Options_EOD,'keys','TBRICKS_INSTRUMENT_ID', ...
 %     'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR, 'Type','left');
 % [C,ia,ic] = unique(iLeft);
 % mainPtfTable = mainPtfTable(C,:);
@@ -269,12 +296,36 @@ clear opts
 
 mainPtfTable = [];
 
-% 1st step: join my_Positions_EOD and Options_EOD
+% 1st step: join Futures:EOD and Options_EOD
 
-[pos_idx,opt_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Options_EOD.TBRICKS_INSTRUMENT_ID);
+fieldsFromOptions = setdiff(Options_EOD.Properties.VariableNames,Futures_EOD.Properties.VariableNames);
+fieldsFromFutures = setdiff(Futures_EOD.Properties.VariableNames,Options_EOD.Properties.VariableNames);
 
-fieldsFromOptions = setdiff(Options_EOD.Properties.VariableNames,Positions_EOD.Properties.VariableNames);
-Options_EOD_toadd = removevars(Options_EOD,setdiff(Options_EOD.Properties.VariableNames,fieldsFromOptions));
+F_2_add_vartypes = varfun(@class, Futures_EOD(:,fieldsFromFutures), 'OutputFormat', 'cell');
+O_2_add_vartypes = varfun(@class, Options_EOD(:,fieldsFromOptions), 'OutputFormat', 'cell');
+szopt = [size(Options_EOD,1),numel(fieldsFromFutures)];
+szfut = [size(Futures_EOD,1),numel(fieldsFromOptions)];
+
+newTableOpt = table('Size',szopt,'VariableTypes',F_2_add_vartypes,'VariableNames',fieldsFromFutures);
+newTableFut = table('Size',szfut,'VariableTypes',O_2_add_vartypes,'VariableNames',fieldsFromOptions);
+
+Options_EOD = [Options_EOD, newTableOpt];
+Futures_EOD = [Futures_EOD, newTableFut];
+
+orderedFields = unique(Options_EOD.Properties.VariableNames);
+
+Options_EOD = Options_EOD(:,orderedFields);
+Futures_EOD = Futures_EOD(:,orderedFields);
+
+Options_Futures_EOD = [Options_EOD; Futures_EOD];
+
+% 2nd step: join the new Options_Futures_EOD with my_Positions_EOD
+
+[pos_idx,opt_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Options_Futures_EOD.TBRICKS_INSTRUMENT_ID);
+
+fieldsFromOptions = setdiff(Options_Futures_EOD.Properties.VariableNames,my_Positions_EOD.Properties.VariableNames);
+Options_EOD_toadd = removevars(Options_Futures_EOD,setdiff(Options_Futures_EOD.Properties.VariableNames,fieldsFromOptions));
+Options_EOD_toadd = Options_EOD_toadd(:,fieldsFromOptions);
 
 O_2_add_vartypes = varfun(@class, Options_EOD_toadd, 'OutputFormat', 'cell');
 
@@ -291,26 +342,27 @@ end
 
 mainPtfTable = [my_Positions_EOD,newTable];
 
-% 2nd step: join my_Positions_EOD and Futures_EOD
+%% 3rd step: join the mainPtfTable with ISIN_EOD
 
-[pos_idx,fut_idx] = ismember(my_Positions_EOD.TBRICKS_INSTRUMENT_ID,Futures_EOD.TBRICKS_INSTRUMENT_ID);
+[pos_idx,isin_idx] = ismember(mainPtfTable.TBRICKS_INSTRUMENT_ID,ISIN_EOD.TBRICKS_INSTRUMENT_ID);
 
-fieldsFromFutures = setdiff(Futures_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
-Futures_EOD_toadd = removevars(Futures_EOD,setdiff(Futures_EOD.Properties.VariableNames,fieldsFromFutures));
+fieldsFromISIN= setdiff(ISIN_EOD.Properties.VariableNames,mainPtfTable.Properties.VariableNames);
+ISIN_EOD_toadd = removevars(ISIN_EOD,setdiff(ISIN_EOD.Properties.VariableNames,fieldsFromISIN));
+ISIN_EOD_toadd = ISIN_EOD_toadd(:,fieldsFromISIN);
 
-O_2_add_vartypes = varfun(@class, Futures_EOD_toadd, 'OutputFormat', 'cell');
+O_2_add_vartypes = varfun(@class, ISIN_EOD_toadd, 'OutputFormat', 'cell');
 
-sz = [numel(mainPtfTable.TBRICKS_INSTRUMENT_ID),numel(fieldsFromFutures)];
-newTable = table('Size',sz,'VariableTypes',O_2_add_vartypes,'VariableNames',fieldsFromFutures);
+sz = [numel(mainPtfTable.TBRICKS_INSTRUMENT_ID),numel(fieldsFromISIN)];
+newTable = table('Size',sz,'VariableTypes',O_2_add_vartypes,'VariableNames',fieldsFromISIN);
 
-fut_idx = fut_idx(fut_idx>0);
+isin_idx = isin_idx(isin_idx>0);
 pos_idx = find(pos_idx>0);
 
 
 for i = 1:numel(pos_idx)
-    newTable(pos_idx(i),:) = Futures_EOD_toadd(fut_idx(i),:);
+    newTable(pos_idx(i),:) = ISIN_EOD_toadd(isin_idx(i),:);
 end
 
 mainPtfTable = [mainPtfTable,newTable];
 
-
+writetable(mainPtfTable,'mainPtfTable.xlsx')
