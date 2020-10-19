@@ -20,6 +20,44 @@ greeks_eod_fileName = "TB_POSITION_ANALYTICS_GREEKS_EOD_20200828.txt";
 
 mainPtfTable = [];
 
+% **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
+DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
+DataFromBBG.folder = [cd,'\BloombergCallsData\'];
+ 
+if DataFromBBG.save2disk
+    if exist('BloombergCallsData','dir')==7
+        rmdir(DataFromBBG.folder(1:end-1),'s');
+    end
+    mkdir(DataFromBBG.folder(1:end-1));
+end
+
+try
+    % javaaddpath('C:\blp\DAPI\blpapi3.jar');
+    DataFromBBG.BBG_conn = blp; % throw error when Bloomberg is not installed
+    pause(2);
+    while isempty(DataFromBBG.BBG_conn) % ~isconnection(DataFromBBG.BBG_conn)
+        pause(2);
+    end
+    
+    DataFromBBG.NOBBG = false(1); % True when Bloomberg is NOT available and to use previopusly saved data
+    
+catch ME
+    % dlgTitle = 'BBG ALERT';
+    % dlgQuest = 'BLOOMBER NOT AVAILABLE! Do you with to continue?';
+    % answer = questdlg(dlgQuest,dlgTitle,'yes','no','no');
+    % if strcmp(answer,'no')
+    %     return
+    % end
+    if isdeployed
+    RunMsg = msgbox('Connection to Bloomberg not available', ...
+        'Deployed code execution');
+    end
+    DataFromBBG.BBG_conn = [];
+    DataFromBBG.NOBBG = true(1); % if true (on machines with no BBG terminal), data are recovered from previously saved files (.save2disk option above)
+end
+% *************************************************************************
+
+
 %% READ EOD POSITIONS 
 
 % Setup the Import Options and import the data
@@ -99,18 +137,21 @@ end
 
 my_Positions_EOD = [Positions_EOD,newTable];
 
-idx = find(isnan(my_Positions_EOD.QUANTITY));
+idx = isnan(my_Positions_EOD.QUANTITY);
 
 my_Positions_EOD(idx,:)=[];
 
-tempTable = varfun(@sum, my_Positions_EOD,'InputVariables',{'QUANTITY','DELTA',...
-                         
+tempTable = varfun(@sum, my_Positions_EOD,'InputVariables',{'QUANTITY',...
+                        'DELTA','GAMMA','RHO','RHO_1','THETA','VEGA'},...
                         'GroupingVariables',{'CURRENCY','INSTRUMENTID_FE',...
                         'MGROUP','MTYPE','PORTFOLIOID','TBRICKS_INSTRUMENT_ID'});
+                    
 idx = find(tempTable.sum_QUANTITY==0);
 tempTable(idx,:) = [];
 tempTable.GroupCount = [];
-tempTable.Properties.VariableNames{end} = 'QUANTITY';
+names = tempTable.Properties.VariableNames;
+names = strrep(names,'sum_','');
+tempTable.Properties.VariableNames = names;
 
 my_Positions_EOD = tempTable;
 clear opts
@@ -339,7 +380,7 @@ end
 
 mainPtfTable = [my_Positions_EOD,newTable];
 
-%% 3rd step: join the mainPtfTable with ISIN_EOD
+% 3rd step: join the mainPtfTable with ISIN_EOD
 
 [pos_idx,isin_idx] = ismember(mainPtfTable.TBRICKS_INSTRUMENT_ID,ISIN_EOD.TBRICKS_INSTRUMENT_ID);
 
@@ -361,5 +402,63 @@ for i = 1:numel(pos_idx)
 end
 
 mainPtfTable = [mainPtfTable,newTable];
+
+%% create a column with the underlying ISIN (if any and if is mapped)
+
+und_tb_code = unique(mainPtfTable.TBRICKS_UNDERLYING_ID);
+und_tb_code = rmmissing(und_tb_code);
+und_isin = table('Size',size(mainPtfTable.ISIN),'VariableNames',"UNDERLYING_ISIN",'VariableType',"string");
+
+for i = 1:numel(und_tb_code)
+    % find the code in ISIN_EOD
+    isin_idx = strcmp(und_tb_code{i},ISIN_EOD.TBRICKS_INSTRUMENT_ID);
+    isin = ISIN_EOD.ISIN(isin_idx);
+    aa = strcmp(und_tb_code{i},mainPtfTable.TBRICKS_UNDERLYING_ID);
+    if ~isempty(aa)
+        und_isin.UNDERLYING_ISIN(aa,:) = isin;
+    end
+end
+
+mainPtfTable = [mainPtfTable,und_isin]; 
+
+% get data from bbg using ISIN code
+
+%% get data from bbg
+isin_list = strcat('/sedol1/',mainPtfTable.ISIN);
+
+N = size(isin_list,1);
+% get the fields: EQ_FUND_CODE TICKER 
+uparams.fields = {'DX895','TICKER'};
+uparams.override_fields = [];
+uparams.history_start_date = today();
+uparams.history_end_date = today();
+uparams.DataFromBBG = DataFromBBG;
+
+
+for k=1:N
+    uparams.ticker = isin_list{k,1};
+    U = Utilities(uparams);
+    U.GetBBG_StaticData;
+    
+    % EQ_FUND_CODE
+    if isempty(U.Output.BBG_getdata.DX895{:})
+        isin_list{k,2} = 'N/A';
+    else
+        isin_list{k,2} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
+    end  
+    % TICKER
+    if isempty(U.Output.BBG_getdata.DS520{:})
+        isin_list{k,3} = 'N/A';
+    else
+        isin_list{k,3} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
+    end 
+ 
+end
+
+
+
+InfoTable = array2table(isin_list(:,2:end));
+InfoTable.Properties.VariableNames = {'EQ_FUND_CODE' 'LONG_COMP_NAME' 'ICB_INDUSTRY_NAME' 'ICB_SECTOR_NAME' 'CUR_MKT_CAP'};
+
 
 writetable(mainPtfTable,'mainPtfTable.xlsx')

@@ -25,7 +25,7 @@ importexcel=datastore(fileName);
 factortable=readall(importexcel);
 % load ([savepath,'factortable.mat']);
 % in alternativa a save: tasto dx su tablename e save as
-save ([savepath,'factortable.mat'],factortable);
+save([savepath,'factortable.mat'],'factortable');
 rf=factortable.Properties.VariableNames(3:end);
 risk32=readtable('rf2supergroup.xlsx','Sheet','rf32');
 factortableT=factortable;

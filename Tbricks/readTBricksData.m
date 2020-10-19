@@ -6,10 +6,19 @@ close all; clear all; clc
 userId = lower(getenv('USERNAME'));
 
 if strcmp(userId,'u093799')
+    dsk = 'D:\';
+else
+    dsk = 'C:\';
+end
+
+addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\']);
+
+if strcmp(userId,'u093799')
     inputDataFolder = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\Tbricks\SSL\'];
 else
     inputDataFolder = ['D:\TBricks\'];
 end
+
 
 positions_eod_fileName = "TB_POSITION_EOD_20200828.txt";
 futures_eod_fileName = "TB_FI_FUTURE_EOD_20200828.txt";
@@ -19,6 +28,44 @@ isin_eod_fileName = "TB_FI_EOD_20200828.txt";
 greeks_eod_fileName = "TB_POSITION_ANALYTICS_GREEKS_EOD_20200828.txt";
 
 mainPtfTable = [];
+
+%% **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
+DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
+DataFromBBG.folder = [cd,'\BloombergCallsData\'];
+ 
+if DataFromBBG.save2disk
+    if exist('BloombergCallsData','dir')==7
+        rmdir(DataFromBBG.folder(1:end-1),'s');
+    end
+    mkdir(DataFromBBG.folder(1:end-1));
+end
+
+try
+    % javaaddpath('C:\blp\DAPI\blpapi3.jar');
+    DataFromBBG.BBG_conn = blp; % throw error when Bloomberg is not installed
+    pause(2);
+    while isempty(DataFromBBG.BBG_conn) % ~isconnection(DataFromBBG.BBG_conn)
+        pause(2);
+    end
+    
+    DataFromBBG.NOBBG = false(1); % True when Bloomberg is NOT available and to use previopusly saved data
+    
+catch ME
+    % dlgTitle = 'BBG ALERT';
+    % dlgQuest = 'BLOOMBER NOT AVAILABLE! Do you with to continue?';
+    % answer = questdlg(dlgQuest,dlgTitle,'yes','no','no');
+    % if strcmp(answer,'no')
+    %     return
+    % end
+    if isdeployed
+    RunMsg = msgbox('Connection to Bloomberg not available', ...
+        'Deployed code execution');
+    end
+    DataFromBBG.BBG_conn = [];
+    DataFromBBG.NOBBG = true(1); % if true (on machines with no BBG terminal), data are recovered from previously saved files (.save2disk option above)
+end
+% *************************************************************************
+
 
 %% READ EOD POSITIONS 
 
@@ -342,7 +389,7 @@ end
 
 mainPtfTable = [my_Positions_EOD,newTable];
 
-%% 3rd step: join the mainPtfTable with ISIN_EOD
+% 3rd step: join the mainPtfTable with ISIN_EOD
 
 [pos_idx,isin_idx] = ismember(mainPtfTable.TBRICKS_INSTRUMENT_ID,ISIN_EOD.TBRICKS_INSTRUMENT_ID);
 
@@ -365,4 +412,62 @@ end
 
 mainPtfTable = [mainPtfTable,newTable];
 
-writetable(mainPtfTable,'mainPtfTable.xlsx')
+%% create a column with the underlying ISIN (if any and if is mapped)
+
+und_tb_code = unique(mainPtfTable.TBRICKS_UNDERLYING_ID);
+und_tb_code = rmmissing(und_tb_code);
+und_isin = table('Size',size(mainPtfTable.ISIN),'VariableNames',"UNDERLYING_ISIN",'VariableType',"string");
+
+for i = 1:numel(und_tb_code)
+    % find the code in ISIN_EOD
+    isin_idx = strcmp(und_tb_code{i},ISIN_EOD.TBRICKS_INSTRUMENT_ID);
+    isin = ISIN_EOD.ISIN(isin_idx);
+    aa = strcmp(und_tb_code{i},mainPtfTable.TBRICKS_UNDERLYING_ID);
+    if ~isempty(aa)
+        und_isin.UNDERLYING_ISIN(aa,:) = isin;
+    end
+end
+
+mainPtfTable = [mainPtfTable,und_isin]; 
+
+% get data from bbg using ISIN code
+
+%% get data from bbg
+isin_list = unique(mainPtfTable.ISIN);
+isin_list = strcat('/ISIN/',isin_list);
+
+
+N = size(isin_list,1);
+% get the fields: EQ_FUND_CODE TICKER 
+uparams.fields = {'DX895','TICKER'};
+uparams.override_fields = [];
+uparams.history_start_date = today();
+uparams.history_end_date = today();
+uparams.DataFromBBG = DataFromBBG;
+
+
+for k=1:N
+    k,N
+    uparams.ticker = isin_list{k,1};
+    U = Utilities(uparams);
+    U.GetBBG_StaticData;
+    
+    % EQ_FUND_CODE
+    if isempty(U.Output.BBG_getdata.DX895{:})
+        isin_list{k,2} = 'N/A';
+    else
+        isin_list{k,2} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
+    end  
+    % TICKER
+    if isempty(U.Output.BBG_getdata.TICKER{:})
+        isin_list{k,3} = 'N/A';
+    else
+        isin_list{k,3} = strcat(U.Output.BBG_getdata.TICKER{:},' Equity');
+    end 
+ 
+end
+
+InfoTable = array2table(isin_list(:,2:end));
+InfoTable.Properties.VariableNames = {'EQ_FUND_CODE' 'TICKER'};
+
+writetable(mainPtfTable,'mainPtfTable.xlsx');

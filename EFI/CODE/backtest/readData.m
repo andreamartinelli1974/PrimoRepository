@@ -20,7 +20,7 @@ if isfile([savepath,'factortable.mat'])==1
 else
     importexcel=datastore(fileName,'Range','A:BL');
     factortable=readall(importexcel);
-    save([savepath,'factortable.mat']);
+    save([savepath,'factortable.mat'],'factortable');
 end
 ref_data_table=factortable{2:end-1,1};
 sandwichDataRet=factortable{2:end-1,3:4};%the 3 and the 4 colums of factortable are returns
