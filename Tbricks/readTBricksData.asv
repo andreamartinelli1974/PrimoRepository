@@ -30,8 +30,14 @@ greeks_eod_fileName = "TB_POSITION_ANALYTICS_GREEKS_EOD_20200828.txt";
 equityDeskPtf = {'AA2','ALPHA_SHORT','BT','DIRGENERALE','DISPERSION'...
                  'EQ_SHORT_TERM','EQUITY_CM','G WEST','IPO_US','LONG_ONLY'...
                  'LONG_TERM','QUANTO','QUANTO_2','RELATIVE09','RISK_ARB',...
-                 'SPMIB','STAT_ARB','STRATEGIC','SYST_VOL','TEAM_STRAT',...
-                 'TECNICO','TP-DIREZIONALE','VOLTRADING'};
+'SPMIB'
+'STAT_ARB'
+'STRATEGIC'
+'SYST_VOL'
+'TEAM_STRAT'
+'TECNICO'
+'TP-DIREZIONALE'
+'VOLTRADING'
 
 mainPtfTable = [];
 
@@ -404,7 +410,6 @@ isin_list(:,2)= mainPtfTable.INSTRUMENTID_FE(idx,:);
 isin_list(:,3)= mainPtfTable.MGROUP(idx,:);
 
 
-
 N = size(isin_list,1);
 % get the fields: EQ_FUND_CODE TICKER 
 uparams.fields = {'DX895','TICKER'};
@@ -434,10 +439,8 @@ for k=1:N
     end 
  
 end
-isin_list(:,6)= mainPtfTable.UNDERLYING_ISIN(idx,:);
 
 InfoTable = array2table(isin_list);
-InfoTable.Properties.VariableNames = {'ISIN','INSTRUMENT_FE','MGROUP','EQ_FUND_CODE','TICKER','UNDERLYING_ISIN'};
+InfoTable.Properties.VariableNames = {'ISIN','INSTRUMENT_FE','MGROUP','EQ_FUND_CODE','TICKER'};
 
-%%
 writetable(mainPtfTable,'mainPtfTable.xlsx');
