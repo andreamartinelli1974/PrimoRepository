@@ -20,24 +20,18 @@ else
 end
 
 
-positions_eod_fileName = "TB_POSITION_EOD_20200828.txt";
-futures_eod_fileName = "TB_FI_FUTURE_EOD_20200828.txt";
-options_eod_fileName = "TB_FI_OPTION_EOD_20200828.txt";
-mktAttributes_eod_fileName = "TB_FI_MARKET_ATTRIBUTES_EOD_20200828";
-isin_eod_fileName = "TB_FI_EOD_20200828.txt";
-greeks_eod_fileName = "TB_POSITION_ANALYTICS_GREEKS_EOD_20200828.txt";
+positions_eod_fileName = "SSL_PCG_POSITION_TBRX_30200831.txt";
+futures_eod_fileName = "SSL_PCG_FI_FUTURE_TBRX_30200831.txt";
+options_eod_fileName = "SSL_PCG_FI_OPTION_TBRX_30200831.txt";
+mktAttributes_eod_fileName = "SSL_PCG_FI_MARKET_ATTRIBUTES_TBRX_30200831.txt";
+isin_eod_fileName = "SSL_PCG_FI_TBRX_30200831.txt";
+greeks_eod_fileName = "SSL_FCHUB_POSITION_ANALYTICS_GREEKS_TBRX_30200831.txt";
 
 equityDeskPtf = {'AA2','ALPHA_SHORT','BT','DIRGENERALE','DISPERSION'...
                  'EQ_SHORT_TERM','EQUITY_CM','G WEST','IPO_US','LONG_ONLY'...
                  'LONG_TERM','QUANTO','QUANTO_2','RELATIVE09','RISK_ARB',...
-'SPMIB'
-'STAT_ARB'
-'STRATEGIC'
-'SYST_VOL'
-'TEAM_STRAT'
-'TECNICO'
-'TP-DIREZIONALE'
-'VOLTRADING'
+                 'SPMIB','STAT_ARB','STRATEGIC','SYST_VOL','TEAM_STRAT',...
+                 'TECNICO','TP-DIREZIONALE','VOLTRADING'};
 
 mainPtfTable = [];
 
@@ -82,24 +76,43 @@ end
 %% READ EOD POSITIONS 
 
 % Setup the Import Options and import the data
-opts = delimitedTextImportOptions("NumVariables", 23);
+opts = delimitedTextImportOptions("NumVariables", 30);
 
 % Specify range and delimiter
 opts.DataLines = [3, Inf];
 opts.Delimiter = "\t";
 
+
+
+
 % Specify column names and types
-opts.VariableNames = ["CURRENCY", "INSTRUMENT_FE", "INSTRUMENTID_FE", "TBRICKS_INSTRUMENT_ID", "MFAMILY", "MGROUP", "MTYPE", "PL_KEY_FE", "PORTFOLIOID", "POSITIONID", "POSPRICE", "POSPRICE_BUY", "POSPRICE_SELL", "QUANTITY", "QUANTITY_BUY", "QUANTITY_LIVE", "QUANTITY_SELL", "REF_DATE", "TYPOLOGY", "INVESTED", "POSITION_CASHFLOW_ID", "MARKET_NAME", "MIC_JOIN_MKT_ATTR"];
-opts.VariableTypes = ["string", "string", "string", "string", "string", "string", "string", "string", "string", "string", "double", "string", "string", "double", "double", "string", "double", "datetime", "string", "double", "string", "string", "string"];
+opts.VariableNames = ["POSPRICE", "BASECURR_PORTCURR", "POSITIONID", "F_PURGED",...
+    "QUANTITY", "QUANTITY_BUY", "QUOTCURR_PORTCURR", "POSPRICE_BUY", "PORTFOLIOID",...
+    "QUANTITY_SELL", "CURRENCY", "SSL_SNAPSHOT_DATE", "SSL_FEID", "POSPRICE_SELL",...
+    "FIID", "PORTFOLIOID_FE", "REF_DATE", "POSITIONID_FE", "INSTRUMENT_FE", "MFAMILY",...
+    "MGROUP", "MTYPE", "PL_KEY_FE","RSKSECTION","TYPOLOGY","USAGE","INTRADAY",...
+    "QUANTITY_LIVE","SRC_ENTITYID","EQUIVALENT_POSITION"];
+opts.VariableTypes = ["double", "string", "string", "string",...
+    "double", "double", "string", "string", "string",...
+    "double", "string", "datetime", "string", "string",...
+    "string", "string", "datetime", "string", "string", "string",...
+    "string", "string", "string", "string", "string", "string", "string",...
+    , "string", "string", "string"];
 
 % Specify file level properties
 opts.ExtraColumnsRule = "ignore";
 opts.EmptyLineRule = "read";
 
 % Specify variable properties
-opts = setvaropts(opts, ["INSTRUMENT_FE", "INSTRUMENTID_FE", "TBRICKS_INSTRUMENT_ID", "POSITIONID", "POSPRICE_BUY", "POSPRICE_SELL", "QUANTITY_LIVE", "TYPOLOGY", "POSITION_CASHFLOW_ID"], "WhitespaceRule", "preserve");
-opts = setvaropts(opts, ["CURRENCY", "INSTRUMENT_FE", "INSTRUMENTID_FE", "TBRICKS_INSTRUMENT_ID", "MFAMILY", "MGROUP", "MTYPE", "PL_KEY_FE", "PORTFOLIOID", "POSITIONID", "POSPRICE_BUY", "POSPRICE_SELL", "QUANTITY_LIVE", "TYPOLOGY", "POSITION_CASHFLOW_ID", "MARKET_NAME", "MIC_JOIN_MKT_ATTR"], "EmptyFieldRule", "auto");
-opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
+opts = setvaropts(opts, ["POSITIONID", "PORTFOLIOID", "FIID", "PORTFOLIOID_FE",...
+    "POSITIONID_FE", "INSTRUMENT_FE", "MFAMILY", "MGROUP", "MTYPE"], "WhitespaceRule", "preserve");
+opts = setvaropts(opts, ["POSPRICE", "BASECURR_PORTCURR", "POSITIONID", "F_PURGED",...
+    "QUANTITY", "QUANTITY_BUY", "QUOTCURR_PORTCURR", "POSPRICE_BUY", "PORTFOLIOID",...
+    "QUANTITY_SELL", "CURRENCY", "SSL_SNAPSHOT_DATE", "SSL_FEID", "POSPRICE_SELL",...
+    "FIID", "PORTFOLIOID_FE", "REF_DATE", "POSITIONID_FE", "INSTRUMENT_FE", "MFAMILY",...
+    "MGROUP", "MTYPE", "PL_KEY_FE","RSKSECTION","TYPOLOGY","USAGE","INTRADAY",...
+    "QUANTITY_LIVE","SRC_ENTITYID","EQUIVALENT_POSITION"], "EmptyFieldRule", "auto");
+opts = setvaropts(opts, ["SSL_SNAPSHOT_DATE","REF_DATE"], "InputFormat", "yyyy-MM-dd");
 
 % Import the data
 Positions_EOD = readtable(inputDataFolder + positions_eod_fileName, opts);
@@ -401,13 +414,23 @@ end
 
 mainPtfTable = [mainPtfTable,und_isin]; 
 
-% get data from bbg using ISIN code
 
-%% get data from bbg
+%% translate data
+params.EquityPtfNames = equityDeskPtf;
+params.DataFromBBG = DataFromBBG;
+params.mainPtfTable = mainPtfTable;
+
+
+myTranslator = TBricksTranslator(params);
+
+%% get data from bbg using ISIN code
+
+% get data from bbg
 [isin_list, idx, ~] = unique(mainPtfTable.ISIN);
 isin_list = strcat('/ISIN/',isin_list);
 isin_list(:,2)= mainPtfTable.INSTRUMENTID_FE(idx,:);
 isin_list(:,3)= mainPtfTable.MGROUP(idx,:);
+
 
 
 N = size(isin_list,1);
@@ -439,8 +462,10 @@ for k=1:N
     end 
  
 end
+isin_list(:,6)= mainPtfTable.UNDERLYING_ISIN(idx,:);
 
 InfoTable = array2table(isin_list);
-InfoTable.Properties.VariableNames = {'ISIN','INSTRUMENT_FE','MGROUP','EQ_FUND_CODE','TICKER'};
+InfoTable.Properties.VariableNames = {'ISIN','INSTRUMENT_FE','MGROUP','EQ_FUND_CODE','TICKER','UNDERLYING_ISIN'};
 
+%%
 writetable(mainPtfTable,'mainPtfTable.xlsx');
