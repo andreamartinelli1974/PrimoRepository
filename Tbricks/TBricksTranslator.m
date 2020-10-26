@@ -58,7 +58,7 @@ classdef TBricksTranslator < handle
            % get data from bbg
            [isin_list, idx, ~] = unique(EquitiesTable.ISIN);
            isin_list = strcat('/ISIN/',isin_list);
-           isin_list(:,2)= EquitiesTable.TBRICKS_INSTRUMENT_ID(idx,:);
+           isin_list(:,2)= EquitiesTable.FIID(idx,:);
 
            N = size(isin_list,1);
            % get the fields: EQ_FUND_CODE TICKER
