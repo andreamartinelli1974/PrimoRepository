@@ -231,14 +231,20 @@ clear opts
 % Import the data
 Options_EOD = readtable(inputDataFolder + options_eod_fileName); %, opts);
 
-% remove missing FIID & STRIKES
+% remove missing FIID & NaN colums
 Options_EOD(ismissing(Options_EOD.FIID),:) = [];
 Options_EOD(ismissing(Options_EOD.STRIKE),:) = [];
+Options_EOD = rmmissing(Options_EOD,2);
 
 %format some column
 Options_EOD.EXPIRY = datetime(num2str(Options_EOD.EXPIRY), 'format', 'yyyyMMdd'); 
 Options_EOD.REF_DATE = datetime(num2str(Options_EOD.REF_DATE), 'format', 'yyyyMMdd'); 
 Options_EOD.UNDERLYINGID = string(Options_EOD.UNDERLYINGID);
+Options_EOD.FIID = string(Options_EOD.FIID);
+Options_EOD.CURRENCY = string(Options_EOD.CURRENCY);
+Options_EOD.F_CALL_PUT = string(Options_EOD.F_CALL_PUT);
+Options_EOD.EXPIRY_LABEL = string(Options_EOD.EXPIRY_LABEL);
+Options_EOD.EXERCISE_STYLE = string(Options_EOD.EXERCISE_STYLE);
 
 
 %% READ Market Attributes
@@ -293,54 +299,87 @@ Options_EOD = Options_EOD(C,:);
 
 %% READ EOD FUTURES 
 
-opts = delimitedTextImportOptions("NumVariables", 22);
+% opts = delimitedTextImportOptions("NumVariables", 22);
+% 
+% % Specify range and delimiter
+% opts.DataLines = [3, Inf];
+% opts.Delimiter = "\t";
+% 
+% % Specify column names and types
+% opts.VariableNames = ["CURRENCY", "DELIVERY_ENDDATE", "DELIVERY_STARTDATE", "DESCRIPTION", "EXPIRY", "EXPIRY_LABEL", "F_CASH_DELIVERY", "F_LISTED", "INSTRUMENTID_FE", "ISIN", "LOTSIZE", "REF_DATE", "SEC_CATEGORY", "SEC_GROUP", "SEC_TYPE", "UNDERLYINGID", "DIV_FUTURE_TYPE", "F_DIV_FUTURE", "DIVIDENDID_FE", "FIID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID"];
+% opts.VariableTypes = ["string", "string", "string", "string", "datetime", "double", "string", "string", "string", "string", "double", "datetime", "string", "string", "string", "string", "string", "string", "string", "string", "string", "string"];
+% 
+% % Specify file level properties
+% opts.ExtraColumnsRule = "ignore";
+% opts.EmptyLineRule = "read";
+% 
+% % Specify variable properties
+% opts = setvaropts(opts, ["DELIVERY_ENDDATE", "DELIVERY_STARTDATE", "DESCRIPTION", "F_LISTED", "INSTRUMENTID_FE", "ISIN", "UNDERLYINGID", "DIV_FUTURE_TYPE", "DIVIDENDID_FE", "FIID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID"], "WhitespaceRule", "preserve");
+% opts = setvaropts(opts, ["CURRENCY", "DELIVERY_ENDDATE", "DELIVERY_STARTDATE", "DESCRIPTION", "F_CASH_DELIVERY", "F_LISTED", "INSTRUMENTID_FE", "ISIN", "SEC_CATEGORY", "SEC_GROUP", "SEC_TYPE", "UNDERLYINGID", "DIV_FUTURE_TYPE", "F_DIV_FUTURE", "DIVIDENDID_FE", "FIID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID"], "EmptyFieldRule", "auto");
+% opts = setvaropts(opts, "EXPIRY", "InputFormat", "yyyy-MM-dd");
+% opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
+% opts = setvaropts(opts, "EXPIRY_LABEL", "TrimNonNumeric", true);
+% opts = setvaropts(opts, "EXPIRY_LABEL", "ThousandsSeparator", ",");
 
-% Specify range and delimiter
-opts.DataLines = [3, Inf];
-opts.Delimiter = "\t";
-
-% Specify column names and types
-opts.VariableNames = ["CURRENCY", "DELIVERY_ENDDATE", "DELIVERY_STARTDATE", "DESCRIPTION", "EXPIRY", "EXPIRY_LABEL", "F_CASH_DELIVERY", "F_LISTED", "INSTRUMENTID_FE", "ISIN", "LOTSIZE", "REF_DATE", "SEC_CATEGORY", "SEC_GROUP", "SEC_TYPE", "UNDERLYINGID", "DIV_FUTURE_TYPE", "F_DIV_FUTURE", "DIVIDENDID_FE", "FIID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID"];
-opts.VariableTypes = ["string", "string", "string", "string", "datetime", "double", "string", "string", "string", "string", "double", "datetime", "string", "string", "string", "string", "string", "string", "string", "string", "string", "string"];
-
-% Specify file level properties
-opts.ExtraColumnsRule = "ignore";
-opts.EmptyLineRule = "read";
-
-% Specify variable properties
-opts = setvaropts(opts, ["DELIVERY_ENDDATE", "DELIVERY_STARTDATE", "DESCRIPTION", "F_LISTED", "INSTRUMENTID_FE", "ISIN", "UNDERLYINGID", "DIV_FUTURE_TYPE", "DIVIDENDID_FE", "FIID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID"], "WhitespaceRule", "preserve");
-opts = setvaropts(opts, ["CURRENCY", "DELIVERY_ENDDATE", "DELIVERY_STARTDATE", "DESCRIPTION", "F_CASH_DELIVERY", "F_LISTED", "INSTRUMENTID_FE", "ISIN", "SEC_CATEGORY", "SEC_GROUP", "SEC_TYPE", "UNDERLYINGID", "DIV_FUTURE_TYPE", "F_DIV_FUTURE", "DIVIDENDID_FE", "FIID", "TBRICKS_UNDERLYING_ID", "TBRICKS_DIVIDEND_ID"], "EmptyFieldRule", "auto");
-opts = setvaropts(opts, "EXPIRY", "InputFormat", "yyyy-MM-dd");
-opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
-opts = setvaropts(opts, "EXPIRY_LABEL", "TrimNonNumeric", true);
-opts = setvaropts(opts, "EXPIRY_LABEL", "ThousandsSeparator", ",");
 % Import the data
-Futures_EOD = readtable(inputDataFolder + futures_eod_fileName, opts);
+Futures_EOD = readtable(inputDataFolder + futures_eod_fileName); %, opts);% remove missing FIID & NaN colums
+Futures_EOD(ismissing(Futures_EOD.FIID),:) = [];
+Futures_EOD = rmmissing(Futures_EOD,2);
 
-Futures_EOD.ISIN = [];
+% Format some columns
+Futures_EOD.FIID = string(Futures_EOD.FIID);
+Futures_EOD.UNDERLYINGID = string(Futures_EOD.UNDERLYINGID);
+Futures_EOD.REF_DATE = datetime(num2str(Futures_EOD.REF_DATE), 'format', 'yyyyMMdd');
+Futures_EOD.EXPIRY = datetime(num2str(Futures_EOD.EXPIRY), 'format', 'yyyyMMdd');
 
 clear opts
 
 %% READ ISIN 
 
-opts = delimitedTextImportOptions("NumVariables", 26);
+opts = delimitedTextImportOptions("NumVariables", 38);
 
 % Specify range and delimiter
 opts.DataLines = [3, Inf];
 opts.Delimiter = "\t";
 
 % Specify column names and types
-opts.VariableNames = ["DEALID_FE","DESCRIPTION","F_ISLISTED","INSTRUMENT_FE","INSTRUMENTID_FE","FIID","ISIN","ISSUERID","MFAMILY","MGROUP","MTYPE","PHASE","PORTFOLIOID","REF_DATE","SEC_CATEGORY","SEC_GROUP","SEC_TYPE","TYPOLOGY","PRICE_MULTIPLIER","CFI_CODE","USE_VOLATILITY_SURFACE","CUSTOM_UNIQUE_ID","BASE_PRICE_MULTIPLIER","SUMMATION_GROUP","CFI_VARIANT_NAME","INSTRUMENTNUM_FE"];
-opts.VariableTypes = ["double", "string", "string", "string","string","string","string","string","string","string","string","double","string","datetime","string","string","string","string","double","string","string","string","double","string","string","double",];
-
+opts.VariableNames = ["ASSETCLASS_DES","NEW_MTYPE","DESCRIPTION_EXT","FI_TYPE",...
+                      "NUMBEROFPHASES","INSTRUMENT_FE","ASSETCLASS","NEW_MGROUP",...
+                      "SSL_FEID","SEC_REFERENCE","F_ISLISTED","TYPOLOGY_DES",...
+                      "SEC_GROUP","DESCRIPTION","COMMENT1","COMMENT0",...
+                      "COMMENT2","ISSUERID","TYPE_DES","FIID",...
+                      "SEC_TYPE","PHASE","ISIN","GROUP_DES",...
+                      "INSTRUMENTID_FE","MTYPE","FAMILY_DES","NEW_MFAMILY"...
+                      "F_LABELCHG","SSL_SNAPSHOT_DATE","TYPOLOGY","MFAMILY",...
+                      "SEC_CATEGORY","REF_DATE","NEW_TYPOLOGY","STRUCTID_FE",...
+                      "INSTRUMENTNUM_FE","MGROUP","QUANTITYFACTOR"];
+opts.VariableTypes = ["string", "string", "string", "string",...
+                      "double", "string", "string", "string",...
+                      "string", "string", "string", "string",...
+                      "string", "string", "string", "string",...
+                      "string", "string", "string", "string",...
+                      "string", "double", "string", "string",...
+                      "string", "string", "string", "string",...
+                      "string", "double", "string", "string",...
+                      "string", "datetime", "string", "string",...
+                      "double", "string", "string"];
 % Specify file level properties
 opts.ExtraColumnsRule = "ignore";
 opts.EmptyLineRule = "read";
 
 % Specify variable properties
-opts = setvaropts(opts, ["DESCRIPTION","INSTRUMENT_FE","INSTRUMENTID_FE","FIID","ISIN","ISSUERID","MTYPE","SEC_CATEGORY","CFI_VARIANT_NAME"], "WhitespaceRule", "preserve");
-opts = setvaropts(opts, ["DESCRIPTION","ISIN","ISSUERID","PORTFOLIOID","TYPOLOGY","CUSTOM_UNIQUE_ID","CFI_VARIANT_NAME","INSTRUMENTNUM_FE"], "EmptyFieldRule", "auto");
-opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyy-MM-dd");
+opts = setvaropts(opts, ["NEW_MTYPE","INSTRUMENT_FE","NEW_MGROUP","DESCRIPTION","FIID","SEC_TYPE","ISIN","INSTRUMENTID_FE","SEC_CATEGORY"], "WhitespaceRule", "preserve");
+opts = setvaropts(opts, ["ASSETCLASS_DES","NEW_MTYPE","DESCRIPTION_EXT","FI_TYPE",...
+                         "NUMBEROFPHASES","INSTRUMENT_FE","ASSETCLASS","NEW_MGROUP",...
+                         "SSL_FEID","SEC_REFERENCE","F_ISLISTED","TYPOLOGY_DES",...
+                         "SEC_GROUP","DESCRIPTION","COMMENT1","COMMENT0",...
+                         "COMMENT2","ISSUERID","TYPE_DES","FIID",...
+                         "SEC_TYPE","PHASE","ISIN","GROUP_DES",...
+                         "INSTRUMENTID_FE","MTYPE","FAMILY_DES","NEW_MFAMILY"...
+                         "F_LABELCHG","SSL_SNAPSHOT_DATE","TYPOLOGY","MFAMILY",...
+                         "SEC_CATEGORY","REF_DATE","NEW_TYPOLOGY","STRUCTID_FE",...
+                         "INSTRUMENTNUM_FE","MGROUP","QUANTITYFACTOR"], "EmptyFieldRule", "auto");
+opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyyMMdd");
 % Import the data
 ISIN_EOD = readtable(inputDataFolder + isin_eod_fileName, opts);
 
@@ -424,7 +463,7 @@ mainPtfTable = [mainPtfTable,newTable];
 
 %% create a column with the underlying ISIN (if any and if is mapped)
 
-und_tb_code = unique(mainPtfTable.TBRICKS_UNDERLYING_ID);
+und_tb_code = unique(mainPtfTable.UNDERLYINGID);
 und_tb_code = rmmissing(und_tb_code);
 und_isin = table('Size',size(mainPtfTable.ISIN),'VariableNames',"UNDERLYING_ISIN",'VariableType',"string");
 
@@ -432,7 +471,7 @@ for i = 1:numel(und_tb_code)
     % find the code in ISIN_EOD
     isin_idx = strcmp(und_tb_code{i},ISIN_EOD.FIID);
     isin = ISIN_EOD.ISIN(isin_idx);
-    aa = strcmp(und_tb_code{i},mainPtfTable.TBRICKS_UNDERLYING_ID);
+    aa = strcmp(und_tb_code{i},mainPtfTable.UNDERLYINGID);
     if ~isempty(aa)
         und_isin.UNDERLYING_ISIN(aa,:) = isin;
     end
@@ -445,7 +484,6 @@ mainPtfTable = [mainPtfTable,und_isin];
 params.EquityPtfNames = equityDeskPtf;
 params.DataFromBBG = DataFromBBG;
 params.mainPtfTable = mainPtfTable;
-
 
 myTranslator = TBricksTranslator(params);
 

@@ -27,7 +27,7 @@ classdef TBricksTranslator < handle
            ptfNumber = numel(TT.EquityPtfNames);
            
            for i =1:ptfNumber
-               tempTable = TT.InputTable(strcmp(TT.InputTable.PORTFOLIOID, TT.EquityPtfNames(i)),:);
+               tempTable = TT.InputTable(strcmp(TT.InputTable.PORTFOLIOID_FE, TT.EquityPtfNames(i)),:);
                if i==1
                    TT.mainTable = tempTable;
                else
@@ -46,7 +46,7 @@ classdef TBricksTranslator < handle
            EquitiesTable = [];
            
            for i =1:ptfNumber
-               tempTable = TT.mainTable(strcmp(TT.mainTable.PORTFOLIOID, TT.EquityPtfNames(i)),:);
+               tempTable = TT.mainTable(strcmp(TT.mainTable.PORTFOLIOID_FE, TT.EquityPtfNames(i)),:);
                if i==1
                    EquitiesTable = tempTable;
                else
@@ -93,7 +93,7 @@ classdef TBricksTranslator < handle
            tkrTable.Properties.VariableNames = {'ISIN','TB_ID','FUND_TKR','TKR'};
            
            % write the tickers at the end of the table
-           tb_code = unique(EquitiesTable.TBRICKS_UNDERLYING_ID);
+           tb_code = unique(EquitiesTable.UNDERLYINGID);
            tb_code = rmmissing(tb_code);
            und_tkr = table('Size',[size(EquitiesTable.ISIN,1),2],...
                            'VariableNames',{'FUND_TKR','TKR'},'VariableType',{'string','string'});
