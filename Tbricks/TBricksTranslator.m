@@ -101,10 +101,10 @@ classdef TBricksTranslator < handle
            for i = 1:numel(tb_code)
                % find the code in ISIN_EOD
                idx = strcmp(tb_code{i},tkrTable.TB_ID);
-               isin = tkrTable.ISIN(idx,3:4);
-               aa = strcmp(tb_code{i},tkrTable.TB_ID);
+               isin = tkrTable(idx,3:4);
+               aa = find(strcmp(tb_code{i},tkrTable.TB_ID));
                if ~isempty(aa)
-                   und_tkr.UNDERLYING_ISIN(aa,:) = isin;
+                   und_tkr(aa,:) = isin;
                end
            end
            
