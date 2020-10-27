@@ -246,57 +246,6 @@ Options_EOD.F_CALL_PUT = string(Options_EOD.F_CALL_PUT);
 Options_EOD.EXPIRY_LABEL = string(Options_EOD.EXPIRY_LABEL);
 Options_EOD.EXERCISE_STYLE = string(Options_EOD.EXERCISE_STYLE);
 
-
-%% READ Market Attributes
-
-% Setup the Import Options and import the data
-opts = delimitedTextImportOptions("NumVariables", 14);
-
-% Specify range and delimiter
-opts.DataLines = [3, Inf];
-opts.Delimiter = "\t";
-
-% Specify column names and types
-opts.VariableNames = ["INSTRUMENTID_FE", "REF_DATE", "MARKET", "RIC0", "SYMBOL",...
-                      "SEDOL", "MKT_SETTL_CONV", "EXCHANGE_MARKET_CODE",...
-                      "FINAL_SETTLEMENT_DAYS", "FIID", "SSL_FEID", "SSL_SNAPSHOT_DATE",...
-                      "MARKET_NAME", "F_IS_PRIMARY"];
-opts.VariableTypes = ["string", "datetime", "string", "string", "string",...
-                      "string", "double", "string",...
-                      "double", "string", "double", "string",...
-                      "string", "string"];
-
-% Specify file level properties
-opts.ExtraColumnsRule = "ignore";
-opts.EmptyLineRule = "read";
-
-% Specify variable properties
-opts = setvaropts(opts, ["INSTRUMENTID_FE", "MARKET_NAME"], "WhitespaceRule", "preserve");
-opts = setvaropts(opts, ["INSTRUMENTID_FE", "REF_DATE", "MARKET", "RIC0", "SYMBOL",...
-                         "SEDOL", "MKT_SETTL_CONV", "EXCHANGE_MARKET_CODE",...
-                         "FINAL_SETTLEMENT_DAYS", "FIID", "SSL_FEID", "SSL_SNAPSHOT_DATE",...
-                         "MARKET_NAME", "F_IS_PRIMARY"], "EmptyFieldRule", "auto");
-opts = setvaropts(opts, "REF_DATE", "InputFormat", "yyyyMMdd");
-
-% Import the data
-mktAttributes_EOD = readtable(inputDataFolder + mktAttributes_eod_fileName, opts);
-mktAttributes_EOD(ismissing(mktAttributes_EOD.FIID),:) = [];
-
-% field names that are in mktAttributes_EOD, but not in Options_EOD
-fieldsFromR = setdiff(mktAttributes_EOD.Properties.VariableNames,Options_EOD.Properties.VariableNames);
-fieldsFromL = Options_EOD.Properties.VariableNames; % I want all fields from left table
-
-clear opts
-
-% re-assign Options_EOD including infos on underlying ID from table mktAttributes_EOD
-[Options_EOD,iLeft,~] = outerjoin(Options_EOD,mktAttributes_EOD,'LeftKeys','UNDERLYINGID', ...
-    'RightKeys','FIID',...
-    'LeftVariables',fieldsFromL ,'RightVariables',fieldsFromR,'Type','left','MergeKeys',false);
-
-[C,ia,ic] = unique(iLeft);
-Options_EOD = Options_EOD(C,:);
-
-
 %% READ EOD FUTURES 
 
 % opts = delimitedTextImportOptions("NumVariables", 22);
@@ -471,7 +420,7 @@ for i = 1:numel(und_tb_code)
     % find the code in ISIN_EOD
     isin_idx = strcmp(und_tb_code{i},ISIN_EOD.FIID);
     isin = ISIN_EOD.ISIN(isin_idx);
-    aa = strcmp(und_tb_code{i},mainPtfTable.UNDERLYINGID);
+    aa = find(strcmp(und_tb_code{i},mainPtfTable.UNDERLYINGID));
     if ~isempty(aa)
         und_isin.UNDERLYING_ISIN(aa,:) = isin;
     end
