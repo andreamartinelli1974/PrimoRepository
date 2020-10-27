@@ -5,6 +5,7 @@ classdef TBricksTranslator < handle
     end
     
     properties
+        
         EquityPtfNames
         DataFromBBG
         InputTable
@@ -19,8 +20,6 @@ classdef TBricksTranslator < handle
         EquitiesLabels = {'Common/Ordinary shares','ETF','Units'};
         FuturesLabels = {'Financial Futures'};
         OptionsLabels = {'Call','Put'};
-        
-        FIGI
    end
        
    methods
@@ -142,8 +141,6 @@ classdef TBricksTranslator < handle
                output_figi = [output_figi, outFigi];
            end
            
-           TT.FIGI = output_figi;
-           
            error_list = zeros(numel(output_figi),1);
            for i = 1:numel(output_figi)
                if isfield(output_figi{1,i},'error')
@@ -152,8 +149,6 @@ classdef TBricksTranslator < handle
            end
            
            isin_error = isin_list(logical(error_list));
-           
-           %%% TO BE CONTINUED %%%
            
        end % end readFigi
    end

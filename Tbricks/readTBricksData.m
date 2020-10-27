@@ -12,6 +12,7 @@ else
 end
 
 addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\']);
+addpath 'D:\Users\u093799\Documents\GitHub\PrimoRepository\Tbricks\OpenFIGI';
 
 if strcmp(userId,'u093799')
     inputDataFolder = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\Tbricks\SSL\'];
@@ -435,50 +436,6 @@ params.DataFromBBG = DataFromBBG;
 params.mainPtfTable = mainPtfTable;
 
 myTranslator = TBricksTranslator(params);
-
-%% get data from bbg using ISIN code
-
-% get data from bbg
-[isin_list, idx, ~] = unique(mainPtfTable.ISIN);
-isin_list = strcat('/ISIN/',isin_list);
-isin_list(:,2)= mainPtfTable.INSTRUMENTID_FE(idx,:);
-isin_list(:,3)= mainPtfTable.MGROUP(idx,:);
-
-
-
-N = size(isin_list,1);
-% get the fields: EQ_FUND_CODE TICKER 
-uparams.fields = {'DX895','TICKER'};
-uparams.override_fields = [];
-uparams.history_start_date = today();
-uparams.history_end_date = today();
-uparams.DataFromBBG = DataFromBBG;
-
-
-for k=1:N
-    k,N
-    uparams.ticker = isin_list{k,1};
-    U = Utilities(uparams);
-    U.GetBBG_StaticData;
-    
-    % EQ_FUND_CODE
-    if isempty(U.Output.BBG_getdata.DX895{:})
-        isin_list{k,4} = 'N/A';
-    else
-        isin_list{k,4} = strcat(U.Output.BBG_getdata.DX895{:},' Equity');
-    end  
-    % TICKER
-    if isempty(U.Output.BBG_getdata.TICKER{:})
-        isin_list{k,5} = 'N/A';
-    else
-        isin_list{k,5} = strcat(U.Output.BBG_getdata.TICKER{:},' Equity');
-    end 
- 
-end
-isin_list(:,6)= mainPtfTable.UNDERLYING_ISIN(idx,:);
-
-InfoTable = array2table(isin_list);
-InfoTable.Properties.VariableNames = {'ISIN','INSTRUMENT_FE','MGROUP','EQ_FUND_CODE','TICKER','UNDERLYING_ISIN'};
 
 %%
 writetable(mainPtfTable,'mainPtfTable.xlsx');

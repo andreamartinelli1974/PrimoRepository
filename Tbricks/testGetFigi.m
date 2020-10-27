@@ -37,11 +37,5 @@ system(fullName);
 
 json2beparsed = jsondecode(fileread([jsonInputFolder 'json.txt']));
 output = parse_json(json2beparsed);
-errorlist = zeros(numel(output),1);
 
-for i = 1:numel(output)
-    if isfield(output{1,i},'error');
-        errorlist(i) = 1;
-    end
-end
 
