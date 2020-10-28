@@ -20,6 +20,10 @@ classdef TBricksTranslator < handle
         FuturesLabels = {'Financial Futures'};
         OptionsLabels = {'Call','Put'};
         
+        mkt_map
+        mkt_map_key = {'CAD','CHF','DKK','GBP','HKD','JPY','NOK','SEK','USD'};
+        mkt_map_val = {'CN','SW','DC','LN','HK','JP','NOK','SEK','US'};
+        
         FIGI
    end
        
@@ -30,7 +34,10 @@ classdef TBricksTranslator < handle
            TT.DataFromBBG = params.DataFromBBG;
            TT.InputTable = params.mainPtfTable;
            
-           % filter the master table to have only the Euqity Desk Portfolios
+           %setup the map
+           TT.mkt_map = containers.Map(TT.mkt_map_key, TT.mkt_map_val);
+           
+           % filter the master table to have only the Equity Desk Portfolios
            ptfNumber = numel(TT.EquityPtfNames);
            
            for i =1:ptfNumber
@@ -49,11 +56,11 @@ classdef TBricksTranslator < handle
        
        function translateEquity(TT)
            % filter by asset class: only Equity-like assets
-           ptfNumber = numel(TT.EquityPtfNames);
+           ptfNumber = numel(TT.EquitiesLabels);
            EquitiesTable = [];
            
            for i =1:ptfNumber
-               tempTable = TT.mainTable(strcmp(TT.mainTable.PORTFOLIOID_FE, TT.EquityPtfNames(i)),:);
+               tempTable = TT.mainTable(strcmp(TT.mainTable.MTYPE, TT.EquitiesLabels(i)),:);
                if i==1
                    EquitiesTable = tempTable;
                else
@@ -80,7 +87,7 @@ classdef TBricksTranslator < handle
            FuturesTable = [];
            
            for i =1:ptfNumber
-               tempTable = TT.mainTable(strcmp(TT.mainTable.PORTFOLIOID, TT.FuturesLabels(i)),:);
+               tempTable = TT.mainTable(strcmp(TT.mainTable.MTYPE, TT.FuturesLabels(i)),:);
                if i==1
                    FuturesTable = tempTable;
                else
@@ -96,7 +103,7 @@ classdef TBricksTranslator < handle
            OptionsTable = [];
            
            for i =1:ptfNumber
-               tempTable = TT.mainTable(strcmp(TT.mainTable.PORTFOLIOID, TT.OptionsLabels(i)),:);
+               tempTable = TT.mainTable(strcmp(TT.mainTable.MTYPE, TT.OptionsLabels(i)),:);
                if i==1
                    OptionsTable = tempTable;
                else
@@ -117,9 +124,10 @@ classdef TBricksTranslator < handle
            output = parse_json(json2beparsed);
        end
        
-       function output = readFigi(TT,isin_currency_list)
+       function [output,isin_ccy_error] = readFigi(TT,isin_currency_list)
+           % output is a cell array with 3 columns:
+           % 1) isin  2) currency  3) bbg ticker
            isin_list = isin_currency_list(:,1);
-           crncy_list = isin_currency_list(:,1);
            if numel(isin_list) > 100
                chunk_nr = ceil(numel(isin_list)/100);
            else
@@ -140,6 +148,8 @@ classdef TBricksTranslator < handle
                outFigi = TT.getFigi;
                
                output_figi = [output_figi, outFigi];
+               
+               clear myList;
            end
            
            TT.FIGI = output_figi;
@@ -151,9 +161,24 @@ classdef TBricksTranslator < handle
                end
            end
            
-           isin_error = isin_list(logical(error_list));
+           isin_ccy_error = isin_currency_list(logical(error_list),:);
+           my_isin_list = isin_currency_list(logical(~error_list),:);
+           output_figi = output_figi(logical(~error_list));
            
-           %%% TO BE CONTINUED %%%
+           % create empty string array to collect bbg tickers
+           bbg_tkr_list = strings(numel(output_figi),1);
+           
+           for i = 1:numel(output_figi)
+                ccy = my_isin_list(i,2);
+                switch ccy
+                    case 'EUR'
+                        figi_ticker = output_figi{1, i}.data{1, 1}.ticker;
+                        figi_mkt = output_figi{1, i}.data{1, 1}.exchCode;
+                        bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                    otherwise
+                        %do nothing at the moment
+                end
+           end
            
        end % end readFigi
    end

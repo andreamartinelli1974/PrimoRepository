@@ -439,3 +439,5 @@ myTranslator = TBricksTranslator(params);
 
 %%
 writetable(mainPtfTable,'mainPtfTable.xlsx');
+
+ccy = unique(mainPtfTable.CURRENCY);
