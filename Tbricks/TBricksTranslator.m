@@ -12,7 +12,7 @@ classdef TBricksTranslator < handle
         Equities;
         Futures;
         Options;
-        NotFound;
+        NotFound = [];
         
         mainTable = [];
         InvestmentUniverse;
@@ -89,12 +89,10 @@ classdef TBricksTranslator < handle
            TT.Equities = EquitiesTable;
            TT.Equities.TICKER = isin_crncy_unique(idx,3);
            
-           TT.NotFound = [isin_crncy_unique(logical(exceptions),1:2);isin_ccy_error];
-           
            % TO DO: manage exceptions
            
            EquNotFound = TT.Equities(ismissing(TT.Equities.TICKER),:);
-           writetable(EquNotFound,'EquitiesNotFound.xlsx');
+           TT.NotFound = [TT.NotFound;EquNotFound];
            
        end % end translateEquity
        
@@ -131,7 +129,7 @@ classdef TBricksTranslator < handle
            TT.Futures.TICKER = isin_crncy_unique(idx,3);
            
            FutNotFound = TT.Futures(ismissing(TT.Futures.TICKER),:);
-           writetable(FutNotFound,'FuturesNotFound.xlsx');
+           TT.NotFound = [TT.NotFound;FutNotFound];
            
        end %end translateFuture
        
@@ -162,14 +160,62 @@ classdef TBricksTranslator < handle
            % get data from openFIGI using ISIN
            [output,isin_ccy_error] = readFigi(TT,isin_crncy);
            
-           % insert the ticker in the table
+           % insert the tickers in the table
            isin_crncy_unique(~exceptions,3) = output(:,3);
            TT.Options = OptionsTable;
            TT.Options.TICKER = isin_crncy_unique(idx,3);
            
-           OptNotFound = TT.Options(ismissing(TT.Options.TICKER),:);
-           writetable(OptNotFound,'OptionsNotFound.xlsx');
+           % process the options without ticker bur with underlying isin
+           no_tkr = ismissing(TT.Options.TICKER);
+           no_und_isin = strcmp("",TT.Options.UNDERLYING_ISIN);
            
+           OptUndIsin = TT.Options((no_tkr & ~no_und_isin),:);
+           
+           % find the underlying ticker
+           isin_crncy_All = [OptUndIsin.UNDERLYING_ISIN,OptUndIsin.CURRENCY];
+           [isin_crncy_unique,~,idx] = unique(isin_crncy_All,'row');
+           
+           %remove missing data
+           no_isin = strcmp("",isin_crncy_unique(:,1));
+           zero_isin = strcmp("000000000000",isin_crncy_unique(:,1));
+           exceptions = no_isin + zero_isin;
+           isin_crncy = isin_crncy_unique(~exceptions,:);
+           
+           % get data from openFIGI using ISIN
+           [output,isin_ccy_error] = readFigi(TT,isin_crncy);
+           
+           % now use bbg to extract the options chain
+           
+           uparams.fields = {'OPT_CHAIN'};
+           uparams.override_fields = [];
+           uparams.history_start_date = today();
+           uparams.history_end_date = today();
+           uparams.DataFromBBG = TT.DataFromBBG;
+           
+           for k = 1:numel(output(:,3))
+               uparams.ticker = output(k,3);
+               U = Utilities(uparams);
+               U.GetBBG_StaticData;
+               
+               bbg_output = U.Output.BBG_getdata;
+               
+               try
+               opt_str = split(bbg_output.OPT_CHAIN{1, 1}{1, 1}," ");
+               catch AM
+                   disp("a");
+               end
+               
+               tkr_root(k,1) = strcat(opt_str(1)," ",opt_str(2));
+           end
+           
+           isin_crncy_unique(~exceptions,3) = output(:,3);
+           OptUndIsin.TICKER = isin_crncy_unique(idx,3);
+           
+           call_put = OptUndIsin.F_CALL_PUT;
+           expiry = datestr(OptUndIsin.EXPIRY,'mm/dd/yyyy');
+           strike = OptUndIsin.STRIKE;
+           
+           TT.NotFound = [TT.NotFound;OptNotFound];
        end % end translateOptions
        
        function output = getFigi(TT)
@@ -331,6 +377,8 @@ classdef TBricksTranslator < handle
                            j=j+1;
                            figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
                            if j == numel(output_figi{1, i}.data)
+                               figi_mkt = 'US';
+                               j=1;
                                break;
                            end
                        end
