@@ -12,6 +12,7 @@ classdef TBricksTranslator < handle
         Equities;
         Futures;
         Options;
+        NotFound;
         
         mainTable = [];
         InvestmentUniverse;
@@ -22,7 +23,7 @@ classdef TBricksTranslator < handle
         
         mkt_map
         mkt_map_key = {'CAD','CHF','DKK','GBP','HKD','JPY','NOK','SEK','USD'};
-        mkt_map_val = {'CN','SW','DC','LN','HK','JP','NOK','SEK','US'};
+        mkt_map_val = {'CN','SW','DC','LN','HK','JP','NO','SS','US'};
         
         FIGI
    end
@@ -51,6 +52,8 @@ classdef TBricksTranslator < handle
            end
            
            TT.translateEquity;
+           TT.translateFutures;
+           TT.translateOptions;
            
        end % end constructor
        
@@ -68,16 +71,30 @@ classdef TBricksTranslator < handle
                end
                clear tempTable;
            end
-           % get data from bbg
-           isin_crncy = [EquitiesTable.ISIN,EquitiesTable.CURRENCY];
-           isin_crncy = unique(isin_crncy,'row');
+           
+           isin_crncy_All = [EquitiesTable.ISIN,EquitiesTable.CURRENCY];
+           [isin_crncy_unique,~,idx] = unique(isin_crncy_All,'row');
            
            %remove missing data
-           isin_crncy(strcmp("",isin_crncy(:,1)),:) = [];
-           isin_crncy(strcmp("000000000000",isin_crncy(:,1)),:) = [];
+           no_isin = strcmp("",isin_crncy_unique(:,1));
+           zero_isin = strcmp("000000000000",isin_crncy_unique(:,1));
+           exceptions = no_isin + zero_isin;
+           isin_crncy = isin_crncy_unique(~exceptions,:);
            
-           output = readFigi(TT,isin_crncy);
+           % get data from openFIGI using ISIN
+           [output,isin_ccy_error] = readFigi(TT,isin_crncy);
            
+           % insert the ticker in the table
+           isin_crncy_unique(~exceptions,3) = output(:,3);
+           TT.Equities = EquitiesTable;
+           TT.Equities.TICKER = isin_crncy_unique(idx,3);
+           
+           TT.NotFound = [isin_crncy_unique(logical(exceptions),1:2);isin_ccy_error];
+           
+           % TO DO: manage exceptions
+           
+           EquNotFound = TT.Equities(ismissing(TT.Equities.TICKER),:);
+           writetable(EquNotFound,'EquitiesNotFound.xlsx');
            
        end % end translateEquity
        
@@ -95,6 +112,27 @@ classdef TBricksTranslator < handle
                end
                clear tempTable;
            end
+           
+           isin_crncy_All = [FuturesTable.ISIN,FuturesTable.CURRENCY];
+           [isin_crncy_unique,~,idx] = unique(isin_crncy_All,'row');
+           
+           %remove missing data
+           no_isin = strcmp("",isin_crncy_unique(:,1));
+           zero_isin = strcmp("000000000000",isin_crncy_unique(:,1));
+           exceptions = no_isin + zero_isin;
+           isin_crncy = isin_crncy_unique(~exceptions,:);
+           
+           % get data from openFIGI using ISIN
+           [output,isin_ccy_error] = readFigi(TT,isin_crncy);
+           
+           % insert the ticker in the table
+           isin_crncy_unique(~exceptions,3) = output(:,3);
+           TT.Futures = FuturesTable;
+           TT.Futures.TICKER = isin_crncy_unique(idx,3);
+           
+           FutNotFound = TT.Futures(ismissing(TT.Futures.TICKER),:);
+           writetable(FutNotFound,'FuturesNotFound.xlsx');
+           
        end %end translateFuture
        
        function translateOptions(TT)
@@ -111,6 +149,27 @@ classdef TBricksTranslator < handle
                end
                clear tempTable;
            end
+           
+           isin_crncy_All = [OptionsTable.ISIN,OptionsTable.CURRENCY];
+           [isin_crncy_unique,~,idx] = unique(isin_crncy_All,'row');
+           
+           %remove missing data
+           no_isin = strcmp("",isin_crncy_unique(:,1));
+           zero_isin = strcmp("000000000000",isin_crncy_unique(:,1));
+           exceptions = no_isin + zero_isin;
+           isin_crncy = isin_crncy_unique(~exceptions,:);
+           
+           % get data from openFIGI using ISIN
+           [output,isin_ccy_error] = readFigi(TT,isin_crncy);
+           
+           % insert the ticker in the table
+           isin_crncy_unique(~exceptions,3) = output(:,3);
+           TT.Options = OptionsTable;
+           TT.Options.TICKER = isin_crncy_unique(idx,3);
+           
+           OptNotFound = TT.Options(ismissing(TT.Options.TICKER),:);
+           writetable(OptNotFound,'OptionsNotFound.xlsx');
+           
        end % end translateOptions
        
        function output = getFigi(TT)
@@ -165,21 +224,124 @@ classdef TBricksTranslator < handle
            my_isin_list = isin_currency_list(logical(~error_list),:);
            output_figi = output_figi(logical(~error_list));
            
+           bbg_tkr_list = TT.getTickers(my_isin_list,output_figi);
+           output = isin_currency_list;
+           output(~error_list,3) = bbg_tkr_list;
+              
+       end % end readFigi
+       
+       function bbg_tkr_list = getTickers(TT,my_isin_list,output_figi)
+           
+           
            % create empty string array to collect bbg tickers
            bbg_tkr_list = strings(numel(output_figi),1);
            
            for i = 1:numel(output_figi)
-                ccy = my_isin_list(i,2);
-                switch ccy
-                    case 'EUR'
-                        figi_ticker = output_figi{1, i}.data{1, 1}.ticker;
-                        figi_mkt = output_figi{1, i}.data{1, 1}.exchCode;
-                        bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
-                    otherwise
-                        %do nothing at the moment
-                end
+               ccy = my_isin_list(i,2);
+               switch ccy
+                   case 'EUR'
+                       figi_ticker = output_figi{1, i}.data{1, 1}.ticker;
+                       figi_mkt = output_figi{1, i}.data{1, 1}.exchCode;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'CAD'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('CAD'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'CHF'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('CHF'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'DKK'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('DKK'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'GBP'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('GBP'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'HKD'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('HKD'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'JPY'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('JPY'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'NOK'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('NOK'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'SEK'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('SEK'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   case 'USD'
+                       j = 1;
+                       figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                       while ~strcmp(TT.mkt_map('USD'),figi_mkt)
+                           j=j+1;
+                           figi_mkt = output_figi{1, i}.data{1, j}.exchCode;
+                           if j == numel(output_figi{1, i}.data)
+                               break;
+                           end
+                       end
+                       figi_ticker = output_figi{1, i}.data{1, j}.ticker;
+                       bbg_tkr_list(i) = strcat(figi_ticker," ",figi_mkt," Equity");
+                       
+                   otherwise
+                       error(strcat(ccy, " not found: must be mapped in TBricksTranslator"));
+                       %do nothing at the moment
+               end
            end
-           
-       end % end readFigi
+       end % getTickers
    end
 end
