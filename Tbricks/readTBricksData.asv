@@ -1,7 +1,7 @@
 close all; clear all; clc
 
 % initial settings
-tic
+
 
 userId = lower(getenv('USERNAME'));
 
@@ -439,11 +439,9 @@ params.mainPtfTable = mainPtfTable;
 
 myTranslator = TBricksTranslator(params);
 
-mainPtfTable = myTranslator.MainTable;
-notFound = myTranslator.NotFound;
+mainPtfTable = 
 
 %%
 writetable(mainPtfTable,'mainPtfTable.xlsx');
-writetable(notFound,'notFound.xlsx');
 
-toc
+ccy = unique(mainPtfTable.CURRENCY);
