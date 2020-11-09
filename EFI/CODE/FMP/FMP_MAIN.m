@@ -74,11 +74,11 @@ if strcmp(userId,'u093799')
     outputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\output\FMP\'];
     
 else
-    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
-    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STILECODE\input']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STILECODE\input\anagrafiche']);
     
-    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\CODE\input\'];
-    outputpath = ['C:\Users\',userId,'\Desktop\EFI\CODE\output\FMP\'];
+    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\STILE_CODE\input\'];
+    outputpath = ['C:\Users\',userId,'\Desktop\EFI\STILE_CODE\output\FMP\'];
 end
 
 
@@ -136,7 +136,7 @@ AllStocksStyle.Properties.VariableNames = ['sedol';Styles];
 
 % check numero fattori
 if size(Factor2Style,1) ~= numel(riskFactors)-4
-    error('il numero di fattori in Factor2Styles.xlsx non coincide con i fattori nel datasandwich');
+    error('il numero di fattori in rf2supergroup.xlsx non coincide con i fattori nel datasandwich');
 end
 
 %% COSTRUZIONE PORTAFOGLI
@@ -197,7 +197,6 @@ for j=3:numerorf-2 % scorro i fattori (parto da 3 perchè primi due sono ritorni 
                 returnSimple_puntual(percentile,t+1)=((1+matricepercettile(:,2))'*cardMatrix{percentile})-1;
                 returnCompound_puntual(percentile,t+1)=((1+matricepercettile(:,3))'*cardMatrix{percentile})-1;
             else
-                
                 for i=1:numel(costituents{percentile})
                     idx = find(strcmp(AllStocksFactorRankingTable.sedol, costituents{percentile}(i)));
                     
@@ -372,7 +371,6 @@ for i = 1:snum % per ogni sedol
         % crea medie mode e mediane sui 58 fattori (unweighted)
         
         if sum(isnan(StyleRank))==numel(StyleRank)
-            clear StyleRank_58_1;
             StyleRank = 0;
         end
         StyleRank = StyleRank(~isnan(StyleRank)); % elimino i NaN

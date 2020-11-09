@@ -24,12 +24,12 @@ if strcmp(userId,'u093799')
     outputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\output\backtest\'];
 
 else
-    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\FMP']);
-    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
-    addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\FMP']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input\anagrafiche']);
     
-    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\CODE\input\'];
-    outputpath= 'C:\Users\u369343\Desktop\EFI\CODE\output\backtest\';
+    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input\'];
+    outputpath= 'C:\Users\u369343\Desktop\EFI\STYLE_CODE\output\backtest\';
 end
 
 %% INPUT

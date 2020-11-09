@@ -3,9 +3,9 @@ clear all
 close
 
 userId = getenv('USERNAME');
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input\anagrafiche']);
-outputpath= 'C:\Users\u369343\Desktop\EFI\CODE\output\FMP\';
+addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input']);
+addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input\anagrafiche']);
+outputpath= 'C:\Users\u369343\Desktop\EFI\STYLE_CODE\output\FMP\';
 
 reducedRF=[0 1]; %boolean variable to define if calendar is constract on the entire or reduced set of riskfactors.
 risk32=readtable('rf2supergroup.xlsx','Sheet','rf32');

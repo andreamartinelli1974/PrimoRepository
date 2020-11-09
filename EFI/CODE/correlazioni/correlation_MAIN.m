@@ -4,8 +4,8 @@ close all
 
 
 userId = getenv('USERNAME');
-addpath(['C:\Users\',userId,'\Desktop\EFI\CODE\input']);
-outputpath= 'C:\Users\u369343\Desktop\EFI\CODE\output\correlazioni\';
+addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input']);
+outputpath= 'C:\Users\u369343\Desktop\EFI\STYLE_CODE\output\correlazioni\';
 
 
 %% data upload and flag definition
