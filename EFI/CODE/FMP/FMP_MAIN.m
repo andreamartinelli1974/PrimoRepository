@@ -2,7 +2,8 @@ clear all
 clc
 close all
 
-writeFlag = 1;
+input_file_name = 'datasandwich_US.xlsx';
+factor_style = 'factor&style_US_';
 
 % **************** STRUCTURE TO ACCESS BLOOMBERG DATA *********************
 DataFromBBG.save2disk = false(1); %false(1); % True to save all Bloomberg calls to disk for future retrieval
@@ -63,8 +64,8 @@ end
 
 %%%%%%*********** TO DO: UPDATE THE PATH IN FINAL VERSION ***********%%%%%%
 
-addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\'], ...
-        ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\']);
+addpath([dsk,'Users\' userId '\Documents\GitHub\Utilities\']);
+outputpath_dashboard = ['X:\SalaOp\EquityPTF\Dashboard\outRiskExcel\'];
 
 if strcmp(userId,'u093799')
     addpath(['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\input\']);
@@ -74,11 +75,11 @@ if strcmp(userId,'u093799')
     outputpath = ['D:\Users\',userId,'\Documents\GitHub\PrimoRepository\EFI\CODE\output\FMP\'];
     
 else
-    addpath(['C:\Users\',userId,'\Desktop\EFI\STILECODE\input']);
-    addpath(['C:\Users\',userId,'\Desktop\EFI\STILECODE\input\anagrafiche']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input']);
+    addpath(['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input\anagrafiche']);
     
-    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\STILE_CODE\input\'];
-    outputpath = ['C:\Users\',userId,'\Desktop\EFI\STILE_CODE\output\FMP\'];
+    inputpath  = ['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\input\'];
+    outputpath = ['C:\Users\',userId,'\Desktop\EFI\STYLE_CODE\output\FMP\'];
 end
 
 
@@ -90,7 +91,7 @@ Npercentili=5;
 startpoint=20050429;
 
 %% CREO CUBO DATI
-[cubodatiSector,sedolchkMap,Nscarichi,riskFactors,ref_date_legend]=read_sandwich('datasandwich.xlsx',startpoint,inputpath);
+[cubodatiSector,sedolchkMap,Nscarichi,riskFactors,ref_date_legend]=read_sandwich(input_file_name,startpoint,inputpath);
 %[cubodatiSector,sedolchkMap,Nscarichi,riskFactors,ref_date_legend]=read_sandwich('US_portfolio_screen (Monthly update).xlsx',startpoint);
 
 %% CREO TIME SERIES PARTENDO DALLA PRIMA DATA (APRILE 2005)
@@ -239,9 +240,7 @@ for j=3:numerorf-2 % scorro i fattori (parto da 3 perchè primi due sono ritorni 
     end
     %%      stampa composizione dei portafogli fattoriali
     %  we need to print the output table bit by bit to not overstep the excel row's limits
-    % NOTA BENE: writeflag aggiunto da AM per saltare questa parte: va
-    % tolto nella versione definitiva
-        if writeFlag ==1 && (size(costituentsTable,1)> 900000 || j==numerorf-2)
+        if (size(costituentsTable,1)> 900000 || j==numerorf-2)
             filename =strcat(outputpath,'FMPComponents.xlsx');
             costituentsTable.Properties.VariableNames={'Date' 'RiskFactor', 'Percentile', 'Components', 'Weigths'};
             writetable(costituentsTable,filename,'Sheet',strcat('FMPComponents',num2str(page))) ;
@@ -390,11 +389,10 @@ end
 sedollist = strcat('/sedol1/',AllStocksStyle.sedol);
 
 N = size(sedollist,1);
-% get the fields: EQ_FUND_CODE LONG_COMP_NAME ICB_INDUSTRY_NAME ICB_SECTOR_NAME CUR_MKT_CAP 
-uparams.fields = {'DX895','DS520','DX941','DX945'}; %,'RR902'};
+% get the fields: EQ_FUND_TICKER LONG_COMP_NAME ICB_INDUSTRY_NAME ICB_SECTOR_NAME CUR_MKT_CAP 
+% uparams.fields = {'DX895','DS520','DX941','DX945'}; %,'RR902'};
+
 uparams.override_fields = [];
-uparams.history_start_date = today();
-uparams.history_end_date = today();
 uparams.DataFromBBG = DataFromBBG;
 
 
@@ -402,6 +400,9 @@ for k=1:N
     uparams.ticker = sedollist{k,1};
     uparams.granularity = 'daily';
     uparams.fields = {'DX895','DS520','DX941','DX945'};
+    uparams.history_start_date = today();
+    uparams.history_end_date = today();
+
     U = Utilities(uparams);
     U.GetBBG_StaticData;
     
@@ -430,8 +431,16 @@ for k=1:N
         sedollist{k,5} = U.Output.BBG_getdata.DX945{:};
     end 
     
+    % get last day of previous month
+    myYear = year(today());
+    myMonth = month(today());
+    myDate = lbusdate(myYear,myMonth-1);
+    
     uparams.fields = {'RR902'};
     uparams.currency = {'EUR'};
+    uparams.history_start_date = myDate;
+    uparams.history_end_date = myDate;
+
     U = Utilities(uparams);
     U.GetHistPrices
     
@@ -466,6 +475,7 @@ writetable(AllStocksFactorRankingTable,[outputpath,'AllStocksFactorRanking_',num
 writetable(AllStocksFactorRankingTable_Digital,[outputpath,'AllStocksFactorRankingTable_Digital_',num2str(ref_date_legend(end)),'.xlsx']);
 writetable(AllStocksStyle,[outputpath,'AllStocksStyle_',num2str(ref_date_legend(end)),'.xlsx']);
 writetable(OutForDashBoard,[outputpath,'factor&style_',num2str(ref_date_legend(end)),'.xlsx']);
+writetable(OutForDashBoard,[outputpath_dashboard,factor_style,num2str(ref_date_legend(end)),'.xlsx']);
 
 [outputTableLO,outputTableLS,outputTableLB,outputTableMatriceExcel]=createTableoutput(rfNoneliminati,timeseries_str,matriceLO,matriceLS,matriceLB,matriceExcel,labelMatriceExcel,legenda,bmk);
 

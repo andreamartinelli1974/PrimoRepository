@@ -24,8 +24,9 @@ for nsettori=1:length(vectorKeys)
     compreturn=factormatrix_settore(:,2);
     compreturn_sorted=compreturn(index_sort);
     sedolSectorSorted = sedolSector(index_sort);
-    [startvector,endvector,cardIndx]=dividePercentile(factorsorted,Npercentili);
+    [startvector,endvector,cardIndx,factornan]=dividePercentile(factorsorted,Npercentili);
     
+    if ~factornan
     %matrix that has as rows sectors and as columns nperc: the element Mij
     %is the number of companies in the j-ptf for the i-ism sector
     if nsettori==1
@@ -56,7 +57,7 @@ for nsettori=1:length(vectorKeys)
         
     end
     
-    
+    end
     clear factormatrix_settore
     clear factorsorted
     clear simplereturn simplereturn_sorted
