@@ -412,13 +412,6 @@ end
 filename1 = strcat(outputpath,'Allstrategies',teclabel);
 filename2 = strcat(outputpath,'StrategiesCompositions',teclabel);
 
-if isfile(filename1)
-    delete(filename1);
-end
-if isfile(filename2)
-    delete(filename2);
-end
-
 writetable(OutputTable,filename1,'Sheet','AllStrategies');
 writetable(annualizedMetrixTable,filename1,'Sheet','Metrics');
 writecell(BMKMatrics,filename1,'Sheet','Metrics','Range',strcat('A',num2str(size(annualizedMetrixTable,1))));

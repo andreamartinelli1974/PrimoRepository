@@ -6,6 +6,8 @@ function [bmk]=readBmk(filename,datestart,isjustFixed)
 %returns
 bmkStruc=datastore(filename,'NumHeaderLines',1,'Range','A:E');
 bmkTable=readall(bmkStruc);
+find_missing = ismissing(bmkTable.date);
+bmkTable(find_missing,:) = [];
 if isjustFixed==true
     position=find(bmkTable{:,1}==datestart); 
 else
